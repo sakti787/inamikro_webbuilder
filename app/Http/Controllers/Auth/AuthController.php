@@ -74,7 +74,7 @@ class AuthController extends Controller
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
             'phone' => ['nullable', 'string', 'max:30'],
-            'whatsapp' => ['nullable', 'string', 'max:30'],
+            'whatsapp' => ['required', 'string', 'max:30'],
             'business_name' => ['required', 'string', 'max:255'],
             'category_id' => ['nullable', 'exists:business_categories,id'],
         ]);

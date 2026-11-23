@@ -27,11 +27,12 @@ class EnsureBusinessOwner
         }
 
         if ($user->isUmkm() && ! $user->business) {
-            $user->business()->create([
+            $business = $user->business()->create([
                 'name' => $user->name.' Store',
                 'slug' => Str::slug($user->name.' Store').'-'.$user->id,
                 'whatsapp' => '08123456789',
             ]);
+            $user->setRelation('business', $business);
         }
 
         return $next($request);
