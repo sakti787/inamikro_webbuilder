@@ -1,10 +1,11 @@
 <?php
 
 use App\Http\Controllers\Auth\AuthController;
+use App\Livewire\Banners\BannerManager;
 use App\Livewire\Dashboard\Index as DashboardIndex;
 use App\Livewire\Dashboard\ProfileForm;
-use App\Models\Product;
-use Illuminate\Support\Facades\Gate;
+use App\Livewire\Products\ProductForm;
+use App\Livewire\Products\ProductList;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -32,12 +33,10 @@ Route::middleware('auth')->group(function () {
         Route::get('/', DashboardIndex::class)->name('dashboard');
         Route::get('/profile', ProfileForm::class)->name('dashboard.profile');
 
-        // Product edit stub route with policy check
-        Route::get('/products/{product}/edit', function (Product $product) {
-            Gate::authorize('update', $product);
-
-            return response('Edit Product '.$product->id);
-        })->name('products.edit');
+        Route::get('/products', ProductList::class)->name('dashboard.products');
+        Route::get('/products/create', ProductForm::class)->name('dashboard.products.create');
+        Route::get('/products/{product}/edit', ProductForm::class)->name('dashboard.products.edit');
+        Route::get('/banners', BannerManager::class)->name('dashboard.banners');
     });
 
     // Admin Routes
