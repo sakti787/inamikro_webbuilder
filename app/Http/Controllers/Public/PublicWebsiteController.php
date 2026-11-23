@@ -8,6 +8,7 @@ use App\Models\WebsiteVisit;
 use App\Models\WhatsappClick;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class PublicWebsiteController extends Controller
@@ -127,7 +128,11 @@ class PublicWebsiteController extends Controller
         }
 
         $validated = $request->validate([
-            'product_id' => ['nullable', 'integer', 'exists:products,id'],
+            'product_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('products', 'id')->where('business_id', $website->business_id),
+            ],
             'source' => ['nullable', 'string', 'max:50'],
         ]);
 

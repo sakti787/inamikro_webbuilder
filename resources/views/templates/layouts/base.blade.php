@@ -121,20 +121,7 @@
             target="_blank"
             rel="noopener noreferrer"
             aria-label="Hubungi via WhatsApp"
-            x-data
-            @click.prevent="
-                fetch('/{{ $website->slug }}/wa-click', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.getAttribute('content') || ''
-                    },
-                    body: JSON.stringify({ source: 'floating_button' }),
-                    keepalive: true
-                }).catch(() => {});
-                window.open('{{ $floatingWaUrl }}', '_blank');
-            "
+            onclick="window.trackWaClick(event, '{{ $floatingWaUrl }}', '{{ $website->slug }}', null, 'floating_button')"
             class="fixed bottom-6 right-6 z-50 bg-[#25D366] hover:bg-[#20bd5a] text-white p-3.5 sm:p-4 rounded-full shadow-lg hover:shadow-2xl hover:scale-110 active:scale-95 transition-all duration-300 flex items-center justify-center group focus:outline-hidden"
         >
             <span class="sr-only">Chat WhatsApp</span>
