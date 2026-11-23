@@ -168,8 +168,29 @@ class StudioBuilderTest extends TestCase
         $this->assertEquals($this->template->id, $this->website->fresh()->template_id);
     }
 
+    public function test_cannot_publish_website_if_readiness_validation_fails(): void
+    {
+        $this->assertEquals('draft', $this->website->status);
+
+        Livewire::actingAs($this->user)
+            ->test(Studio::class)
+            ->call('togglePublish')
+            ->assertSee('Gagal Publikasi:')
+            ->assertSee('Minimal harus memiliki 1 produk aktif sebelum publikasi');
+
+        $this->assertEquals('draft', $this->website->fresh()->status);
+        $this->assertNull($this->website->fresh()->published_at);
+    }
+
     public function test_umkm_can_toggle_website_status_between_draft_and_published(): void
     {
+        $this->business->products()->create([
+            'name' => 'Bakso Urat Spesial',
+            'slug' => 'bakso-urat-spesial',
+            'price' => 25000,
+            'is_available' => true,
+        ]);
+
         $this->assertEquals('draft', $this->website->status);
 
         Livewire::actingAs($this->user)

@@ -4,8 +4,9 @@ namespace App\Livewire\Builder;
 
 use App\Models\Template;
 use App\Models\Website;
+use App\Services\SlugService;
+use App\Services\WebsitePublishValidator;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use Livewire\Attributes\Layout;
@@ -74,7 +75,7 @@ class Studio extends Component
 
             $website = $business->website()->create([
                 'template_id' => $defaultTemplate?->id ?? 1,
-                'slug' => Str::slug($business->name) ?: 'store-'.$business->id,
+                'slug' => app(SlugService::class)->generateUniqueSlug($business->name),
                 'status' => 'draft',
             ]);
         }
@@ -156,6 +157,14 @@ class Studio extends Component
             ]);
             session()->flash('success', 'Website berhasil diubah menjadi Draft.');
         } else {
+            $validation = app(WebsitePublishValidator::class)->validate($this->website);
+
+            if (! $validation->isValid()) {
+                session()->flash('publish_error', implode(' ', $validation->getErrors()));
+
+                return;
+            }
+
             $this->website->update([
                 'status' => 'published',
                 'published_at' => now(),

@@ -179,6 +179,27 @@
         </div>
     </header>
 
+    <!-- Publish Error Alert Banner -->
+    @if (session('publish_error'))
+        <div 
+            x-data="{ show: true }" 
+            x-show="show" 
+            class="bg-rose-950/95 border-b border-rose-800 text-rose-200 px-4 sm:px-6 py-2.5 text-xs font-medium flex items-center justify-between shrink-0 z-40 shadow-md"
+        >
+            <div class="flex items-center gap-2">
+                <svg class="w-4 h-4 text-rose-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                </svg>
+                <span><strong>Gagal Publikasi:</strong> {{ session('publish_error') }}</span>
+            </div>
+            <button type="button" @click="show = false" class="text-rose-400 hover:text-rose-100 p-1" title="Tutup">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+    @endif
+
     <!-- Studio Body: Split View -->
     <div class="flex-1 flex overflow-hidden relative">
         <!-- Floating Flash Notification -->

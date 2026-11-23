@@ -13,6 +13,7 @@ use App\Models\User;
 use App\Models\Website;
 use App\Models\WebsiteVisit;
 use App\Models\WhatsappClick;
+use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -216,5 +217,16 @@ class AdminManagementTest extends TestCase
         $response->assertSee(route('admin.users'));
         $response->assertSee(route('admin.templates'));
         $response->assertSee(route('logout'));
+    }
+
+    public function test_database_seeder_creates_default_super_admin(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        $this->assertDatabaseHas('users', [
+            'email' => 'admin@inamikro.com',
+            'role' => 'admin',
+            'name' => 'Super Administrator',
+        ]);
     }
 }

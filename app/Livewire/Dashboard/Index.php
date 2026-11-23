@@ -6,8 +6,6 @@ use App\Models\Business;
 use App\Models\Website;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -38,27 +36,8 @@ class Index extends Component
                 ->where('is_available', true)
                 ->count();
 
-            if ($this->website) {
-                if (Schema::hasTable('website_analytics')) {
-                    $this->totalViews = DB::table('website_analytics')
-                        ->where('website_id', $this->website->id)
-                        ->where('event_type', 'page_view')
-                        ->count();
-
-                    $this->totalWaClicks = DB::table('website_analytics')
-                        ->where('website_id', $this->website->id)
-                        ->where('event_type', 'wa_click')
-                        ->count();
-                }
-
-                if ($this->totalViews === 0 && Schema::hasTable('website_visits')) {
-                    $this->totalViews = $this->website->visits()->count();
-                }
-
-                if ($this->totalWaClicks === 0 && Schema::hasTable('whatsapp_clicks')) {
-                    $this->totalWaClicks = $this->website->whatsappClicks()->count();
-                }
-            }
+            $this->totalViews = $this->website ? $this->website->visits()->count() : 0;
+            $this->totalWaClicks = $this->website ? $this->website->whatsappClicks()->count() : 0;
         }
     }
 

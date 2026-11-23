@@ -12,7 +12,7 @@
     $hasDiscount = $product->discount_price && $product->discount_price < $product->price;
     $effectivePrice = $hasDiscount ? $product->discount_price : $product->price;
     $primaryImg = $product->primaryImage?->image ?? $product->images->first()?->image;
-    $backLink = request()->routeIs('builder.preview') ? route('builder.preview', $website) : url()->previous();
+    $backLink = request()->routeIs('builder.preview') ? route('builder.preview', $website) : route('public.website', $website->slug);
 @endphp
 
 <!-- Navigation Bar -->

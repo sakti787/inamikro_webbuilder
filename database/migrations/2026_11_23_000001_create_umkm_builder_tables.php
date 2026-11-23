@@ -95,7 +95,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('business_id')->constrained('businesses')->cascadeOnDelete();
             $table->string('image');
-            $table->string('title');
+            $table->string('title')->nullable();
             $table->text('subtitle')->nullable();
             $table->string('button_text', 100)->nullable();
             $table->string('button_url')->nullable();

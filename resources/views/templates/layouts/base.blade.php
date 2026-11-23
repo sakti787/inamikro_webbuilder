@@ -63,6 +63,9 @@
     <!-- Real-time postMessage Theme Listener for Studio Builder -->
     <script>
         window.addEventListener('message', (event) => {
+            if (event.origin !== window.location.origin) {
+                return;
+            }
             if (event.data && event.data.type === 'UPDATE_THEME') {
                 const { primaryColor, secondaryColor, fontFamily, font } = event.data.payload || {};
                 if (primaryColor) {

@@ -429,4 +429,21 @@ class ProductManagementTest extends TestCase
 
         $this->assertDatabaseHas('banners', ['id' => $bannerB->id]);
     }
+
+    public function test_umkm_can_upload_banner_without_title(): void
+    {
+        Storage::fake('public');
+        $bannerImage = UploadedFile::fake()->create('promo-no-title.jpg', 150, 'image/jpeg');
+
+        Livewire::actingAs($this->user)
+            ->test(BannerManager::class)
+            ->set('image', $bannerImage)
+            ->set('title', '')
+            ->call('save')
+            ->assertHasNoErrors();
+
+        $banner = Banner::where('business_id', $this->business->id)->latest()->first();
+        $this->assertNotNull($banner);
+        $this->assertNull($banner->title);
+    }
 }

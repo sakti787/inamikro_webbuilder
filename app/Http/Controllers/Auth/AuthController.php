@@ -9,6 +9,7 @@ use App\Models\Template;
 use App\Models\Theme;
 use App\Models\User;
 use App\Models\Website;
+use App\Services\SlugService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -109,14 +110,7 @@ class AuthController extends Controller
                     'is_active' => true,
                 ]);
 
-            $baseWebsiteSlug = Str::slug($validated['business_name']) ?: 'store-'.$user->id;
-            $websiteSlug = $baseWebsiteSlug;
-            $counter = 1;
-
-            while (Website::query()->where('slug', $websiteSlug)->exists()) {
-                $websiteSlug = "{$baseWebsiteSlug}-{$counter}";
-                $counter++;
-            }
+            $websiteSlug = app(SlugService::class)->generateUniqueSlug($validated['business_name']);
 
             $website = Website::create([
                 'business_id' => $business->id,

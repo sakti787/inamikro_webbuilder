@@ -219,7 +219,7 @@
                         $primaryImg = $product->primaryImage?->image ?? $product->images->first()?->image;
                         $detailLink = request()->routeIs('builder.preview')
                             ? route('builder.preview', ['website' => $website, 'product_id' => $product->id])
-                            : '#product-' . $product->id;
+                            : route('public.product', ['slug' => $website->slug, 'product_slug' => $product->slug]);
                         $hasDiscount = $product->discount_price && $product->discount_price < $product->price;
                         $effectivePrice = $hasDiscount ? $product->discount_price : $product->price;
                     @endphp
