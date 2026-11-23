@@ -24,9 +24,9 @@
     <!-- Dynamic CSS Variables from Website Theme -->
     <style>
         :root {
-            --color-primary: {{ $website->theme->primary_color ?? '#2563EB' }};
-            --color-secondary: {{ $website->theme->secondary_color ?? '#1E40AF' }};
-            --font-family: '{{ $website->theme->font_family ?? 'Inter' }}', sans-serif;
+            --color-primary: {{ $website->theme?->primary_color ?? '#2563EB' }};
+            --color-secondary: {{ $website->theme?->secondary_color ?? '#1E40AF' }};
+            --font-family: '{{ $website->theme?->font_family ?? 'Inter' }}', sans-serif;
         }
 
         body {
