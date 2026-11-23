@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Builder\PreviewController;
+use App\Http\Controllers\Public\PublicWebsiteController;
 use App\Livewire\Banners\BannerManager;
 use App\Livewire\Builder\Studio;
 use App\Livewire\Dashboard\Index as DashboardIndex;
@@ -57,3 +58,7 @@ Route::middleware('auth')->group(function () {
         })->name('users');
     });
 });
+
+// Public Website Routes
+Route::get('/{slug}', [PublicWebsiteController::class, 'show'])->name('public.website');
+Route::get('/{slug}/produk/{product_slug}', [PublicWebsiteController::class, 'productDetail'])->name('public.product');
