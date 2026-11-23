@@ -1,7 +1,9 @@
 <?php
 
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\Builder\PreviewController;
 use App\Livewire\Banners\BannerManager;
+use App\Livewire\Builder\Studio;
 use App\Livewire\Dashboard\Index as DashboardIndex;
 use App\Livewire\Dashboard\ProfileForm;
 use App\Livewire\Products\ProductForm;
@@ -37,6 +39,11 @@ Route::middleware('auth')->group(function () {
         Route::get('/products/create', ProductForm::class)->name('dashboard.products.create');
         Route::get('/products/{product}/edit', ProductForm::class)->name('dashboard.products.edit');
         Route::get('/banners', BannerManager::class)->name('dashboard.banners');
+        Route::get('/builder', Studio::class)->name('dashboard.builder');
+    });
+
+    Route::middleware('umkm.owner')->group(function () {
+        Route::get('/builder/preview/{website}', [PreviewController::class, 'show'])->name('builder.preview');
     });
 
     // Admin Routes
