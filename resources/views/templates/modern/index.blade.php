@@ -5,8 +5,8 @@
 @section('content')
 @php
     $business = $website->business;
-    $rawWa = preg_replace('/[^0-9]/', '', $business?->whatsapp ?? '');
-    $waNumber = str_starts_with($rawWa, '0') ? '62' . substr($rawWa, 1) : $rawWa;
+    $waGenerator = app(\App\Services\WhatsAppUrlGenerator::class);
+    $waNumber = $waGenerator->cleanPhoneNumber($business?->whatsapp);
     $waUrl = $waNumber ? 'https://wa.me/' . $waNumber : null;
     $activeBanners = $business?->banners ? $business->banners->where('is_active', true) : collect();
     $products = $business?->products ? $business->products->where('is_available', true) : collect();
@@ -51,9 +51,14 @@
 
         <!-- Right WhatsApp Action -->
         @if ($waUrl)
+            @php
+                $headerWaUrl = $waGenerator->forGeneralInquiry($business?->whatsapp, $business?->name);
+            @endphp
             <a 
-                href="{{ $waUrl }}?text={{ urlencode('Halo ' . ($business?->name ?? 'Admin') . ', saya tertarik dengan produk/layanan Anda.') }}" 
+                href="{{ $headerWaUrl }}" 
                 target="_blank"
+                rel="noopener noreferrer"
+                onclick="trackWaClick(event, '{{ $headerWaUrl }}', '{{ $website->slug }}', null, 'header_nav')"
                 class="theme-bg-primary text-white px-5 py-2.5 rounded-xl text-xs font-bold shadow-sm hover:opacity-95 transition flex items-center gap-2"
             >
                 <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24">
@@ -128,7 +133,16 @@
                         Jelajahi Solusi Kami
                     </a>
                     @if ($waUrl)
-                        <a href="{{ $waUrl }}" target="_blank" class="bg-white text-slate-800 border border-slate-300 px-6 py-3.5 rounded-xl text-xs sm:text-sm font-bold hover:bg-slate-50 transition">
+                        @php
+                            $heroWaUrl = $waGenerator->forGeneralInquiry($business?->whatsapp, $business?->name);
+                        @endphp
+                        <a 
+                            href="{{ $heroWaUrl }}" 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            onclick="trackWaClick(event, '{{ $heroWaUrl }}', '{{ $website->slug }}', null, 'hero_section')"
+                            class="bg-white text-slate-800 border border-slate-300 px-6 py-3.5 rounded-xl text-xs sm:text-sm font-bold hover:bg-slate-50 transition"
+                        >
                             Konsultasi via WhatsApp
                         </a>
                     @endif
@@ -272,9 +286,19 @@
                                 </div>
 
                                 @if ($waUrl)
+                                    @php
+                                        $productWaUrl = $waGenerator->forProduct(
+                                            $business->whatsapp,
+                                            $business->name,
+                                            $product->name,
+                                            $effectivePrice
+                                        );
+                                    @endphp
                                     <a 
-                                        href="{{ $waUrl }}?text={{ urlencode('Halo ' . ($business?->name ?? 'Admin') . ', saya tertarik untuk memesan: ' . $product->name . ' (Rp ' . number_format($effectivePrice, 0, ',', '.') . ')') }}"
+                                        href="{{ $productWaUrl }}"
                                         target="_blank"
+                                        rel="noopener noreferrer"
+                                        onclick="trackWaClick(event, '{{ $productWaUrl }}', '{{ $website->slug }}', {{ $product->id }}, 'catalog_card')"
                                         class="theme-bg-primary text-white px-4 py-2 rounded-xl text-xs font-bold hover:opacity-95 transition flex items-center gap-1.5 shadow-xs"
                                     >
                                         <span>Pesan</span>
@@ -424,10 +448,15 @@
                 </div>
 
                 @if ($waUrl)
+                    @php
+                        $contactWaUrl = $waGenerator->forGeneralInquiry($business->whatsapp, $business->name);
+                    @endphp
                     <div class="pt-2">
                         <a 
-                            href="{{ $waUrl }}?text={{ urlencode('Halo ' . ($business?->name ?? 'Admin') . ', saya ingin konsultasi kebutuhan bisnis.') }}" 
+                            href="{{ $contactWaUrl }}" 
                             target="_blank"
+                            rel="noopener noreferrer"
+                            onclick="trackWaClick(event, '{{ $contactWaUrl }}', '{{ $website->slug }}', null, 'contact_section')"
                             class="w-full theme-bg-primary text-white py-3 rounded-xl text-xs font-bold text-center block shadow-xs hover:opacity-95 transition"
                         >
                             Hubungi via WhatsApp

@@ -6,8 +6,8 @@
 @section('content')
 @php
     $business = $website->business;
-    $rawWa = preg_replace('/[^0-9]/', '', $business?->whatsapp ?? '');
-    $waNumber = str_starts_with($rawWa, '0') ? '62' . substr($rawWa, 1) : $rawWa;
+    $waGenerator = app(\App\Services\WhatsAppUrlGenerator::class);
+    $waNumber = $waGenerator->cleanPhoneNumber($business?->whatsapp);
     $waUrl = $waNumber ? 'https://wa.me/' . $waNumber : null;
     $hasDiscount = $product->discount_price && $product->discount_price < $product->price;
     $effectivePrice = $hasDiscount ? $product->discount_price : $product->price;
@@ -28,9 +28,14 @@
         <span class="text-sm font-extrabold text-slate-900">{{ $business?->name }}</span>
 
         @if ($waUrl)
+            @php
+                $headerWaUrl = $waGenerator->forGeneralInquiry($business?->whatsapp, $business?->name);
+            @endphp
             <a 
-                href="{{ $waUrl }}" 
+                href="{{ $headerWaUrl }}" 
                 target="_blank"
+                rel="noopener noreferrer"
+                onclick="trackWaClick(event, '{{ $headerWaUrl }}', '{{ $website->slug }}', null, 'header_nav')"
                 class="theme-bg-primary text-white px-4 py-2 rounded-xl text-xs font-bold shadow-xs hover:opacity-95 transition"
             >
                 Konsultasi WhatsApp
@@ -166,14 +171,19 @@
             <div class="pt-4 space-y-3">
                 @if ($waUrl)
                     @php
-                        $inquiryMessage = "Halo {$business?->name}, saya tertarik dengan:\n"
-                            . "- Layanan/Produk: {$product->name}\n"
-                            . "- Harga: Rp " . number_format($effectivePrice, 0, ',', '.') . "\n"
-                            . "Saya ingin konsultasi lebih lanjut terkait pemesanan.";
+                        $productWaUrl = $waGenerator->forProduct(
+                            $business->whatsapp,
+                            $business->name,
+                            $product->name,
+                            $effectivePrice,
+                            !empty($product->variant_options) && is_array($product->variant_options) ? implode(', ', $product->variant_options) : null
+                        );
                     @endphp
                     <a 
-                        href="{{ $waUrl }}?text={{ urlencode($inquiryMessage) }}" 
+                        href="{{ $productWaUrl }}" 
                         target="_blank"
+                        rel="noopener noreferrer"
+                        onclick="trackWaClick(event, '{{ $productWaUrl }}', '{{ $website->slug }}', {{ $product->id }}, 'product_detail')"
                         class="w-full theme-bg-primary text-white py-4 px-6 rounded-2xl text-sm font-bold flex items-center justify-center gap-2.5 shadow-md hover:opacity-95 transition"
                     >
                         <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24">

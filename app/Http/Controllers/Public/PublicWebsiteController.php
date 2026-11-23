@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Public;
 use App\Http\Controllers\Controller;
 use App\Models\Website;
 use App\Models\WebsiteVisit;
+use App\Models\WhatsappClick;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -107,6 +109,38 @@ class PublicWebsiteController extends Controller
             'website' => $website,
             'business' => $website->business,
             'product' => $product,
+        ]);
+    }
+
+    /**
+     * Record a WhatsApp button click event for conversion analytics.
+     */
+    public function recordWaClick(Request $request, string $slug): JsonResponse
+    {
+        $website = Website::query()
+            ->where('slug', $slug)
+            ->where('status', 'published')
+            ->first();
+
+        if (! $website) {
+            abort(404, 'Website tidak ditemukan atau belum dipublikasikan.');
+        }
+
+        $validated = $request->validate([
+            'product_id' => ['nullable', 'integer', 'exists:products,id'],
+            'source' => ['nullable', 'string', 'max:50'],
+        ]);
+
+        WhatsappClick::create([
+            'website_id' => $website->id,
+            'product_id' => $validated['product_id'] ?? null,
+            'source' => $validated['source'] ?? 'landing_page',
+            'clicked_at' => now(),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Click recorded',
         ]);
     }
 

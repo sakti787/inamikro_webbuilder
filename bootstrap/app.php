@@ -18,6 +18,10 @@ return Application::configure(basePath: dirname(__DIR__))
             'admin' => EnsureAdmin::class,
             'umkm.owner' => EnsureBusinessOwner::class,
         ]);
+
+        $middleware->validateCsrfTokens(except: [
+            '*/wa-click',
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

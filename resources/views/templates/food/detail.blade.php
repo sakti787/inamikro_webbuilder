@@ -6,8 +6,8 @@
 @section('content')
 @php
     $business = $website->business;
-    $rawWa = preg_replace('/[^0-9]/', '', $business?->whatsapp ?? '');
-    $waNumber = str_starts_with($rawWa, '0') ? '62' . substr($rawWa, 1) : $rawWa;
+    $waGenerator = app(\App\Services\WhatsAppUrlGenerator::class);
+    $waNumber = $waGenerator->cleanPhoneNumber($business?->whatsapp);
     $waUrl = $waNumber ? 'https://wa.me/' . $waNumber : null;
     $hasDiscount = $product->discount_price && $product->discount_price < $product->price;
     $effectivePrice = $hasDiscount ? $product->discount_price : $product->price;
@@ -28,9 +28,14 @@
         <span class="text-sm font-black text-slate-900">{{ $business?->name }}</span>
 
         @if ($waUrl)
+            @php
+                $headerWaUrl = $waGenerator->forGeneralInquiry($business?->whatsapp, $business?->name);
+            @endphp
             <a 
-                href="{{ $waUrl }}" 
+                href="{{ $headerWaUrl }}" 
                 target="_blank"
+                rel="noopener noreferrer"
+                onclick="trackWaClick(event, '{{ $headerWaUrl }}', '{{ $website->slug }}', null, 'header_nav')"
                 class="theme-bg-primary text-white px-4 py-2 rounded-xl text-xs font-bold shadow-xs hover:opacity-95 transition"
             >
                 Order Meja / Antar
@@ -157,14 +162,19 @@
             <div class="space-y-2.5 pt-2">
                 @if ($waUrl)
                     @php
-                        $foodMessage = "Halo {$business?->name}, saya ingin memesan menu:\n"
-                            . "- {$product->name}\n"
-                            . "- Harga: Rp " . number_format($effectivePrice, 0, ',', '.') . "\n"
-                            . "Mohon info ketersediaan dan estimasi waktu penyajian.";
+                        $productWaUrl = $waGenerator->forProduct(
+                            $business->whatsapp,
+                            $business->name,
+                            $product->name,
+                            $effectivePrice,
+                            !empty($product->variant_options) && is_array($product->variant_options) ? implode(', ', $product->variant_options) : null
+                        );
                     @endphp
                     <a 
-                        href="{{ $waUrl }}?text={{ urlencode($foodMessage) }}" 
+                        href="{{ $productWaUrl }}" 
                         target="_blank"
+                        rel="noopener noreferrer"
+                        onclick="trackWaClick(event, '{{ $productWaUrl }}', '{{ $website->slug }}', {{ $product->id }}, 'product_detail')"
                         class="w-full theme-bg-primary text-white py-3.5 px-6 rounded-2xl text-sm font-bold flex items-center justify-center gap-2 shadow-md hover:opacity-95 transition"
                     >
                         <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24">

@@ -60,5 +60,6 @@ Route::middleware('auth')->group(function () {
 });
 
 // Public Website Routes
+Route::post('/{slug}/wa-click', [PublicWebsiteController::class, 'recordWaClick'])->name('public.wa-click');
 Route::get('/{slug}', [PublicWebsiteController::class, 'show'])->name('public.website');
 Route::get('/{slug}/produk/{product_slug}', [PublicWebsiteController::class, 'productDetail'])->name('public.product');

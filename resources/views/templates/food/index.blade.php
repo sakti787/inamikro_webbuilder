@@ -5,8 +5,8 @@
 @section('content')
 @php
     $business = $website->business;
-    $rawWa = preg_replace('/[^0-9]/', '', $business?->whatsapp ?? '');
-    $waNumber = str_starts_with($rawWa, '0') ? '62' . substr($rawWa, 1) : $rawWa;
+    $waGenerator = app(\App\Services\WhatsAppUrlGenerator::class);
+    $waNumber = $waGenerator->cleanPhoneNumber($business?->whatsapp);
     $waUrl = $waNumber ? 'https://wa.me/' . $waNumber : null;
     $activeBanners = $business?->banners ? $business->banners->where('is_active', true) : collect();
     $products = $business?->products ? $business->products->where('is_available', true) : collect();
@@ -55,9 +55,14 @@
 
         <!-- Quick Order WhatsApp CTA -->
         @if ($waUrl)
+            @php
+                $headerWaUrl = $waGenerator->forGeneralInquiry($business?->whatsapp, $business?->name);
+            @endphp
             <a 
-                href="{{ $waUrl }}?text={{ urlencode('Halo ' . ($business?->name ?? 'Admin') . ', saya ingin memesan makanan/minuman.') }}" 
+                href="{{ $headerWaUrl }}" 
                 target="_blank"
+                rel="noopener noreferrer"
+                onclick="trackWaClick(event, '{{ $headerWaUrl }}', '{{ $website->slug }}', null, 'header_nav')"
                 class="theme-bg-primary text-white px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold shadow-md hover:opacity-95 transition flex items-center gap-2"
             >
                 <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24">
@@ -250,9 +255,19 @@
                             </div>
 
                             @if ($waUrl)
+                                @php
+                                    $menuWaUrl = $waGenerator->forProduct(
+                                        $business->whatsapp,
+                                        $business->name,
+                                        $product->name,
+                                        $effectivePrice
+                                    );
+                                @endphp
                                 <a 
-                                    href="{{ $waUrl }}?text={{ urlencode('Halo ' . ($business?->name ?? 'Admin') . ', saya ingin memesan menu: ' . $product->name . ' (Rp ' . number_format($effectivePrice, 0, ',', '.') . ')') }}"
+                                    href="{{ $menuWaUrl }}" 
                                     target="_blank"
+                                    rel="noopener noreferrer"
+                                    onclick="trackWaClick(event, '{{ $menuWaUrl }}', '{{ $website->slug }}', {{ $product->id }}, 'catalog_card')"
                                     class="theme-bg-primary text-white px-3.5 py-2 rounded-xl text-xs font-bold hover:opacity-95 transition flex items-center gap-1.5 shadow-xs"
                                 >
                                     <span>Pesan Menu</span>
@@ -348,10 +363,15 @@
             @endif
 
             @if ($waUrl)
+                @php
+                    $reservationWaUrl = $waGenerator->forGeneralInquiry($business->whatsapp, $business->name);
+                @endphp
                 <div class="pt-2">
                     <a 
-                        href="{{ $waUrl }}?text={{ urlencode('Halo ' . ($business?->name ?? 'Admin') . ', saya ingin reservasi meja atau pesan takeaway.') }}" 
+                        href="{{ $reservationWaUrl }}" 
                         target="_blank"
+                        rel="noopener noreferrer"
+                        onclick="trackWaClick(event, '{{ $reservationWaUrl }}', '{{ $website->slug }}', null, 'contact_section')"
                         class="w-full theme-bg-primary text-white py-3 rounded-xl text-xs font-bold text-center block shadow-xs hover:opacity-95 transition"
                     >
                         Reservasi / Pesan Antar via WhatsApp

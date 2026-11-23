@@ -5,8 +5,8 @@
 @section('content')
 @php
     $business = $website->business;
-    $rawWa = preg_replace('/[^0-9]/', '', $business?->whatsapp ?? '');
-    $waNumber = str_starts_with($rawWa, '0') ? '62' . substr($rawWa, 1) : $rawWa;
+    $waGenerator = app(\App\Services\WhatsAppUrlGenerator::class);
+    $waNumber = $waGenerator->cleanPhoneNumber($business?->whatsapp);
     $waUrl = $waNumber ? 'https://wa.me/' . $waNumber : null;
     $activeBanners = $business?->banners ? $business->banners->where('is_active', true) : collect();
     $products = $business?->products ? $business->products->where('is_available', true) : collect();
@@ -48,9 +48,14 @@
 
         <div class="flex items-center gap-3">
             @if ($waUrl)
+                @php
+                    $headerWaUrl = $waGenerator->forGeneralInquiry($business?->whatsapp, $business?->name);
+                @endphp
                 <a 
-                    href="{{ $waUrl }}?text={{ urlencode('Halo ' . ($business?->name ?? 'Admin') . ', saya ingin bertanya seputar produk Anda.') }}" 
+                    href="{{ $headerWaUrl }}" 
                     target="_blank"
+                    rel="noopener noreferrer"
+                    onclick="trackWaClick(event, '{{ $headerWaUrl }}', '{{ $website->slug }}', null, 'header_nav')"
                     class="theme-bg-primary text-white px-5 py-2.5 rounded-full text-xs font-semibold shadow-xs hover:opacity-95 transition flex items-center gap-2"
                 >
                     <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24">
@@ -195,9 +200,19 @@
                                     </a>
 
                                     @if ($waUrl)
+                                        @php
+                                            $cardWaUrl = $waGenerator->forProduct(
+                                                $business->whatsapp,
+                                                $business->name,
+                                                $product->name,
+                                                $effectivePrice
+                                            );
+                                        @endphp
                                         <a 
-                                            href="{{ $waUrl }}?text={{ urlencode('Halo ' . ($business?->name ?? 'Admin') . ', saya ingin memesan produk: ' . $product->name . ' (Rp ' . number_format($effectivePrice, 0, ',', '.') . ')') }}"
+                                            href="{{ $cardWaUrl }}"
                                             target="_blank"
+                                            rel="noopener noreferrer"
+                                            onclick="trackWaClick(event, '{{ $cardWaUrl }}', '{{ $website->slug }}', {{ $product->id }}, 'catalog_card')"
                                             class="px-3 py-1 rounded-full text-xs font-semibold theme-bg-primary text-white hover:opacity-90 transition flex items-center gap-1 shadow-xs"
                                         >
                                             <span>Pesan</span>
@@ -293,10 +308,15 @@
                 @endif
 
                 @if ($waUrl)
+                    @php
+                        $contactWaUrl = $waGenerator->forGeneralInquiry($business->whatsapp, $business->name);
+                    @endphp
                     <div class="pt-2">
                         <a 
-                            href="{{ $waUrl }}?text={{ urlencode('Halo ' . ($business?->name ?? 'Admin') . ', saya ingin konsultasi produk.') }}" 
+                            href="{{ $contactWaUrl }}" 
                             target="_blank"
+                            rel="noopener noreferrer"
+                            onclick="trackWaClick(event, '{{ $contactWaUrl }}', '{{ $website->slug }}', null, 'contact_section')"
                             class="w-full theme-bg-primary text-white py-3 rounded-full text-xs font-bold text-center block shadow-xs hover:opacity-95 transition"
                         >
                             Hubungi via WhatsApp
