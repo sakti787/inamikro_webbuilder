@@ -5,6 +5,7 @@ namespace App\Livewire\Dashboard;
 use App\Models\BusinessCategory;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -15,8 +16,6 @@ use Livewire\WithFileUploads;
 class ProfileForm extends Component
 {
     use WithFileUploads;
-
-    public ?int $businessId = null;
 
     public string $name = '';
 
@@ -80,7 +79,6 @@ class ProfileForm extends Component
         $business = $user?->business;
 
         if ($business) {
-            $this->businessId = $business->id;
             $this->name = $business->name ?? '';
             $this->category_id = $business->category_id;
             $this->description = $business->description;
@@ -119,6 +117,10 @@ class ProfileForm extends Component
         ];
 
         if ($this->logo) {
+            if ($business->logo && Storage::disk('public')->exists($business->logo)) {
+                Storage::disk('public')->delete($business->logo);
+            }
+
             $path = $this->logo->store('logos', 'public');
             $updateData['logo'] = $path;
             $this->existingLogo = $path;
