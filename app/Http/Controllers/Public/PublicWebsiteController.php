@@ -17,6 +17,7 @@ class PublicWebsiteController extends Controller
     {
         $website = Website::query()
             ->where('slug', $slug)
+            ->where('status', 'published')
             ->with([
                 'business.banners',
                 'business.products.primaryImage',
@@ -31,7 +32,7 @@ class PublicWebsiteController extends Controller
             ])
             ->first();
 
-        if (! $website || $website->status !== 'published') {
+        if (! $website) {
             abort(404, 'Website tidak ditemukan atau belum dipublikasikan.');
         }
 
@@ -55,6 +56,7 @@ class PublicWebsiteController extends Controller
     {
         $website = Website::query()
             ->where('slug', $slug)
+            ->where('status', 'published')
             ->with([
                 'business',
                 'theme',
@@ -62,7 +64,7 @@ class PublicWebsiteController extends Controller
             ])
             ->first();
 
-        if (! $website || $website->status !== 'published') {
+        if (! $website) {
             abort(404, 'Website tidak ditemukan atau belum dipublikasikan.');
         }
 
@@ -113,15 +115,19 @@ class PublicWebsiteController extends Controller
      */
     protected function recordVisit(Website $website, Request $request): void
     {
-        $ip = $request->ip() ?? '127.0.0.1';
-        $userAgent = $request->userAgent() ?? '';
-        $visitorHash = hash('sha256', "{$ip}|{$userAgent}");
+        try {
+            $ip = $request->ip() ?? '127.0.0.1';
+            $userAgent = $request->userAgent() ?? '';
+            $visitorHash = hash('sha256', "{$ip}|{$userAgent}");
 
-        WebsiteVisit::create([
-            'website_id' => $website->id,
-            'visited_at' => now(),
-            'visitor_hash' => $visitorHash,
-            'referrer' => $request->header('referer'),
-        ]);
+            WebsiteVisit::create([
+                'website_id' => $website->id,
+                'visited_at' => now(),
+                'visitor_hash' => $visitorHash,
+                'referrer' => $request->header('referer'),
+            ]);
+        } catch (\Throwable $e) {
+            report($e);
+        }
     }
 }
