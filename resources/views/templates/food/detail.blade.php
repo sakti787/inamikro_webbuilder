@@ -145,6 +145,20 @@
                 </div>
             </div>
 
+            <!-- Variant Options if any -->
+            @if (!empty($product->variant_options) && is_array($product->variant_options))
+                <div class="space-y-2 pt-1">
+                    <h3 class="text-xs font-black uppercase tracking-wider text-slate-900">Pilihan Varian / Level</h3>
+                    <div class="flex flex-wrap gap-2">
+                        @foreach ($product->variant_options as $variant)
+                            <span class="px-3 py-1.5 rounded-xl border border-amber-200 text-xs font-bold text-amber-900 bg-amber-50/60">
+                                {{ is_string($variant) ? $variant : json_encode($variant) }}
+                            </span>
+                        @endforeach
+                    </div>
+                </div>
+            @endif
+
             <!-- Operating Hours & Delivery Note -->
             <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-600 space-y-1">
                 <div class="flex items-center gap-1.5 font-bold text-slate-800">

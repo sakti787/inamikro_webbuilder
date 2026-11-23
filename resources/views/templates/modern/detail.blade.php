@@ -147,6 +147,20 @@
                 </div>
             </div>
 
+            <!-- Variant Options if any -->
+            @if (!empty($product->variant_options) && is_array($product->variant_options))
+                <div class="space-y-2 pt-1">
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-slate-900">Pilihan Varian / Tipe</h3>
+                    <div class="flex flex-wrap gap-2">
+                        @foreach ($product->variant_options as $variant)
+                            <span class="px-3 py-1.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-800 bg-slate-50">
+                                {{ is_string($variant) ? $variant : json_encode($variant) }}
+                            </span>
+                        @endforeach
+                    </div>
+                </div>
+            @endif
+
             <!-- Value Props Checklist -->
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 text-xs text-slate-700">
                 <div class="flex items-center gap-2">
