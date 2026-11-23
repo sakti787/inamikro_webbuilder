@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\Auth\AuthController;
+use App\Livewire\Dashboard\Index as DashboardIndex;
+use App\Livewire\Dashboard\ProfileForm;
 use App\Models\Product;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
@@ -27,9 +29,8 @@ Route::middleware('auth')->group(function () {
 
     // UMKM Owner Routes
     Route::middleware('umkm.owner')->prefix('dashboard')->group(function () {
-        Route::get('/', function () {
-            return response('UMKM Dashboard');
-        })->name('dashboard');
+        Route::get('/', DashboardIndex::class)->name('dashboard');
+        Route::get('/profile', ProfileForm::class)->name('dashboard.profile');
 
         // Product edit stub route with policy check
         Route::get('/products/{product}/edit', function (Product $product) {
