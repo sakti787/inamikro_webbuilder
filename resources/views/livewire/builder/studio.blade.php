@@ -14,7 +14,7 @@
                         secondaryColor: this.secondaryColor,
                         fontFamily: this.fontFamily
                     }
-                }, '*');
+                }, window.location.origin);
             }
         },
         init() {

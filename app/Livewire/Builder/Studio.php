@@ -6,6 +6,7 @@ use App\Models\Template;
 use App\Models\Website;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -35,7 +36,11 @@ class Studio extends Component
         return [
             'primaryColor' => ['required', 'string', 'regex:/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/'],
             'secondaryColor' => ['required', 'string', 'regex:/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/'],
-            'fontFamily' => ['required', 'string', 'max:50'],
+            'fontFamily' => [
+                'required',
+                'string',
+                Rule::in(['Inter', 'Poppins', 'Roboto', 'Plus Jakarta Sans', 'Montserrat', 'Playfair Display', 'Outfit']),
+            ],
         ];
     }
 
