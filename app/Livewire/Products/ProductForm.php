@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
@@ -43,6 +44,8 @@ class ProductForm extends Component
      */
     public $variant_options = [];
 
+    public string $variant_string = '';
+
     /**
      * @var array<int, TemporaryUploadedFile>
      */
@@ -62,9 +65,14 @@ class ProductForm extends Component
      */
     protected function rules(): array
     {
+        $businessId = Auth::user()?->business?->id;
+
         return [
             'name' => 'required|string|max:255',
-            'category_id' => 'nullable|exists:product_categories,id',
+            'category_id' => [
+                'nullable',
+                Rule::exists('product_categories', 'id')->where(fn ($q) => $q->where('business_id', $businessId)),
+            ],
             'price' => 'required|numeric|min:0',
             'discount_price' => 'nullable|numeric|min:0|lt:price',
             'description' => 'nullable|string',
@@ -118,6 +126,11 @@ class ProductForm extends Component
             $this->label = $product->label ?? '';
             $this->is_available = (bool) $product->is_available;
             $this->variant_options = $product->variant_options ?? [];
+            if (is_array($this->variant_options)) {
+                $this->variant_string = implode(', ', $this->variant_options);
+            } elseif (is_string($this->variant_options)) {
+                $this->variant_string = $this->variant_options;
+            }
             $this->loadExistingImages();
         }
     }
@@ -231,7 +244,9 @@ class ProductForm extends Component
 
         // Parse variant options
         $variants = [];
-        if (is_array($this->variant_options)) {
+        if (! empty($this->variant_string)) {
+            $variants = array_values(array_filter(array_map('trim', explode(',', $this->variant_string)), fn ($v) => $v !== ''));
+        } elseif (is_array($this->variant_options)) {
             $variants = array_values(array_filter(array_map('trim', $this->variant_options), fn ($v) => $v !== ''));
         } elseif (is_string($this->variant_options)) {
             $variants = array_values(array_filter(array_map('trim', explode(',', $this->variant_options)), fn ($v) => $v !== ''));

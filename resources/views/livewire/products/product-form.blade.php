@@ -227,13 +227,9 @@
                 <p class="text-xs text-slate-500 mb-2">
                     Masukkan varian yang tersedia. Anda dapat memisahkan dengan tanda koma (contoh: <code>Panas, Dingin, Less Sugar</code> atau <code>S, M, L, XL</code>).
                 </p>
-                @php
-                    $variantString = is_array($variant_options) ? implode(', ', $variant_options) : $variant_options;
-                @endphp
                 <input 
                     type="text" 
-                    value="{{ $variantString }}"
-                    @input="$wire.set('variant_options', $event.target.value.split(',').map(s => s.trim()).filter(Boolean))"
+                    wire:model.blur="variant_string"
                     placeholder="Contoh: Merah, Biru, Hijau" 
                     class="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition"
                 >
