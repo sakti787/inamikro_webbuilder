@@ -33,6 +33,22 @@ class User extends Authenticatable
     }
 
     /**
+     * Determine if the user is an administrator.
+     */
+    public function isAdmin(): bool
+    {
+        return $this->role === 'admin';
+    }
+
+    /**
+     * Determine if the user is an UMKM owner.
+     */
+    public function isUmkm(): bool
+    {
+        return $this->role === 'umkm';
+    }
+
+    /**
      * Get the business owned by the user.
      */
     public function business(): HasOne
