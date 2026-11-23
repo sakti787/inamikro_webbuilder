@@ -9,7 +9,6 @@ use App\Models\Website;
 use App\Models\WebsiteVisit;
 use App\Models\WhatsappClick;
 use Illuminate\Contracts\View\View;
-use Illuminate\Database\Eloquent\Collection;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -28,11 +27,6 @@ class Dashboard extends Component
 
     public int $totalWaClicks = 0;
 
-    /**
-     * @var Collection<int, Business>
-     */
-    public Collection $recentBusinesses;
-
     public function mount(): void
     {
         $this->totalUmkm = User::where('role', 'umkm')->count();
@@ -40,15 +34,17 @@ class Dashboard extends Component
         $this->totalProducts = Product::count();
         $this->totalVisits = WebsiteVisit::count();
         $this->totalWaClicks = WhatsappClick::count();
-
-        $this->recentBusinesses = Business::with(['user', 'category', 'website'])
-            ->latest()
-            ->take(6)
-            ->get();
     }
 
     public function render(): View
     {
-        return view('livewire.admin.dashboard');
+        $recentBusinesses = Business::with(['user', 'category', 'website'])
+            ->latest()
+            ->take(6)
+            ->get();
+
+        return view('livewire.admin.dashboard', [
+            'recentBusinesses' => $recentBusinesses,
+        ]);
     }
 }
