@@ -3,6 +3,9 @@
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Builder\PreviewController;
 use App\Http\Controllers\Public\PublicWebsiteController;
+use App\Livewire\Admin\Dashboard as AdminDashboard;
+use App\Livewire\Admin\TemplateManagement;
+use App\Livewire\Admin\UserManagement;
 use App\Livewire\Banners\BannerManager;
 use App\Livewire\Builder\Studio;
 use App\Livewire\Dashboard\Index as DashboardIndex;
@@ -49,13 +52,9 @@ Route::middleware('auth')->group(function () {
 
     // Admin Routes
     Route::middleware('admin')->prefix('admin')->name('admin.')->group(function () {
-        Route::get('/dashboard', function () {
-            return response('Admin Dashboard');
-        })->name('dashboard');
-
-        Route::get('/users', function () {
-            return response('Admin Users');
-        })->name('users');
+        Route::get('/dashboard', AdminDashboard::class)->name('dashboard');
+        Route::get('/users', UserManagement::class)->name('users');
+        Route::get('/templates', TemplateManagement::class)->name('templates');
     });
 });
 
