@@ -281,8 +281,152 @@
             </div>
         </div>
 
+        <!-- Keunggulan Layanan (Features / Value Proposition Cards) -->
+        <div class="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-xs space-y-5">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 {{ $features_enabled ? 'border-b border-slate-100 pb-4' : '' }}">
+                <div class="flex items-start gap-3">
+                    <div class="p-2 rounded-xl bg-amber-50 text-amber-600 flex-shrink-0 mt-0.5">
+                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 0 1-1.043 3.296 3.745 3.745 0 0 1-3.296 1.043A3.745 3.745 0 0 1 12 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 0 1-3.296-1.043 3.745 3.745 0 0 1-1.043-3.296A3.745 3.745 0 0 1 3 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 0 1 1.043-3.296 3.746 3.746 0 0 1 3.296-1.043A3.746 3.746 0 0 1 12 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 0 1 3.296 1.043 3.746 3.746 0 0 1 1.043 3.296A3.745 3.745 0 0 1 21 12Z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h2 class="text-base font-bold text-slate-900">
+                            Keunggulan Layanan (Mengapa Memilih Kami)
+                        </h2>
+                        <p class="text-xs text-slate-500 mt-0.5">
+                            Tampilkan 3 poin nilai tambah atau keunggulan toko Anda untuk meyakinkan calon pembeli di landing page.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="flex-shrink-0">
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" wire:model.live="features_enabled" class="sr-only peer">
+                        <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                        <span class="ml-3 text-sm font-semibold text-slate-900">Aktifkan Bagian Keunggulan di Landing Page</span>
+                    </label>
+                </div>
+            </div>
+
+            @if ($features_enabled)
+                <div class="space-y-5 pt-1">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                        <!-- Badge / Label Kecil -->
+                        <div>
+                            <label for="features_badge" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                                Label Badge (Kecil)
+                            </label>
+                            <input 
+                                type="text" 
+                                id="features_badge" 
+                                wire:model="features_badge" 
+                                value="{{ $features_badge }}"
+                                placeholder="Contoh: Mengapa Memilih Kami" 
+                                class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                            >
+                            @error('features_badge')
+                                <p class="text-xs text-red-600 font-semibold mt-1">{{ $message }}</p>
+                            @enderror
+                        </div>
+
+                        <!-- Title -->
+                        <div class="md:col-span-2">
+                            <label for="features_title" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                                Judul Utama <span class="text-red-500">*</span>
+                            </label>
+                            <input 
+                                type="text" 
+                                id="features_title" 
+                                wire:model="features_title" 
+                                value="{{ $features_title }}"
+                                placeholder="Contoh: Keunggulan Layanan Kami" 
+                                class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                                required
+                            >
+                            @error('features_title')
+                                <p class="text-xs text-red-600 font-semibold mt-1">{{ $message }}</p>
+                            @enderror
+                        </div>
+                    </div>
+
+                    <!-- Subtitle -->
+                    <div>
+                        <label for="features_subtitle" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                            Sub-judul / Penjelasan Singkat
+                        </label>
+                        <input 
+                            type="text" 
+                            id="features_subtitle" 
+                            wire:model="features_subtitle" 
+                            value="{{ $features_subtitle }}"
+                            placeholder="Contoh: Komitmen kami dalam memberikan standar mutu dan kepuasan terbaik bagi Anda." 
+                            class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                        >
+                        @error('features_subtitle')
+                            <p class="text-xs text-red-600 font-semibold mt-1">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <!-- 3 Cards Grid -->
+                    <div class="pt-3 border-t border-slate-100">
+                        <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider mb-3">
+                            3 Kartu Nilai Tambah / Keunggulan
+                        </h3>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            @for ($i = 0; $i < 3; $i++)
+                                <div class="p-4 rounded-xl border border-slate-200 bg-slate-50/50 space-y-3">
+                                    <div class="flex items-center gap-2 text-xs font-bold text-slate-700">
+                                        <span class="w-5 h-5 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-[11px] font-bold">{{ $i + 1 }}</span>
+                                        Keunggulan #{{ $i + 1 }}
+                                    </div>
+                                    <div>
+                                        <label for="features_item_{{ $i }}_title" class="block text-[11px] font-semibold text-slate-600 mb-1">
+                                            Judul Poin <span class="text-red-500">*</span>
+                                        </label>
+                                        <input 
+                                            type="text" 
+                                            id="features_item_{{ $i }}_title"
+                                            wire:model="features_items.{{ $i }}.title" 
+                                            value="{{ $features_items[$i]['title'] ?? '' }}"
+                                            placeholder="Contoh: {{ $i === 0 ? 'Bahan Pilihan' : ($i === 1 ? 'Pengiriman Cepat' : 'Garansi Mutu') }}" 
+                                            class="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition bg-white"
+                                            required
+                                        >
+                                        @error('features_items.' . $i . '.title')
+                                            <p class="text-[11px] text-red-600 font-semibold mt-1">{{ $message }}</p>
+                                        @enderror
+                                    </div>
+                                    <div>
+                                        <label for="features_item_{{ $i }}_description" class="block text-[11px] font-semibold text-slate-600 mb-1">
+                                            Deskripsi Ringkas
+                                        </label>
+                                        <textarea 
+                                            id="features_item_{{ $i }}_description"
+                                            wire:model="features_items.{{ $i }}.description" 
+                                            rows="2"
+                                            placeholder="Deskripsi singkat keunggulan..."
+                                            class="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition bg-white"
+                                        >{{ $features_items[$i]['description'] ?? '' }}</textarea>
+                                        @error('features_items.' . $i . '.description')
+                                            <p class="text-[11px] text-red-600 font-semibold mt-1">{{ $message }}</p>
+                                        @enderror
+                                    </div>
+                                </div>
+                            @endfor
+                        </div>
+                    </div>
+                </div>
+            @else
+                <p class="text-xs text-slate-400 italic">
+                    Bagian keunggulan saat ini dinonaktifkan. Aktifkan sakelar toggle di atas untuk menampilkan 3 kartu keunggulan di landing page.
+                </p>
+            @endif
+        </div>
+
         <!-- Submit Button -->
         <div class="flex items-center justify-end gap-3 pt-2">
+
             <button 
                 type="submit" 
                 wire:loading.attr="disabled"

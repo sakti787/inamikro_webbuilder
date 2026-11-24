@@ -511,4 +511,37 @@ class DashboardProfileTest extends TestCase
         $this->assertSame('Keunggulan Toko Kami', $fresh->features['title']);
         $this->assertSame('Bahan Terbaik', $fresh->features['items'][0]['title']);
     }
+
+    public function test_profile_form_view_renders_features_section_and_conditional_inputs(): void
+    {
+        $user = User::factory()->create(['role' => 'umkm']);
+        Business::create([
+            'user_id' => $user->id,
+            'name' => 'Toko UI',
+            'slug' => 'toko-ui',
+            'whatsapp' => '081234567890',
+            'features' => [
+                'enabled' => true,
+                'badge' => 'Mengapa Memilih Kami',
+                'title' => 'Keunggulan Layanan Kami',
+                'subtitle' => 'Komitmen kami',
+                'items' => [
+                    ['title' => 'Kualitas 1', 'description' => 'Desc 1'],
+                    ['title' => 'Kualitas 2', 'description' => 'Desc 2'],
+                    ['title' => 'Kualitas 3', 'description' => 'Desc 3'],
+                ],
+            ],
+        ]);
+
+        Livewire::actingAs($user)
+            ->test(ProfileForm::class)
+            ->assertSee('Keunggulan Layanan (Mengapa Memilih Kami)')
+            ->assertSee('Aktifkan Bagian Keunggulan')
+            ->assertSee('Kualitas 1')
+            ->assertSee('Kualitas 2')
+            ->assertSee('Kualitas 3')
+            ->set('features_enabled', false)
+            ->assertDontSee('Kualitas 1')
+            ->assertSee('Bagian keunggulan saat ini dinonaktifkan.');
+    }
 }
