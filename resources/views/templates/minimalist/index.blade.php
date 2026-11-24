@@ -123,6 +123,44 @@
     </div>
 </section>
 
+@if (!empty($business?->features['enabled']) && !empty($business?->features['items']))
+    <!-- Value Propositions / Mengapa Memilih Kami (Minimalist Iconless) -->
+    <section class="py-12 sm:py-16 px-4 bg-slate-50/50 border-t border-slate-100">
+        <div class="max-w-6xl mx-auto">
+            <div class="text-center max-w-xl mx-auto mb-10 space-y-2">
+                @if (!empty($business->features['badge']))
+                    <span class="text-[11px] font-bold uppercase tracking-widest theme-text-primary block">
+                        {{ $business->features['badge'] }}
+                    </span>
+                @endif
+                <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+                    {{ $business->features['title'] ?? 'Keunggulan Layanan Kami' }}
+                </h2>
+                @if (!empty($business->features['subtitle']))
+                    <p class="text-xs sm:text-sm text-slate-500 font-light leading-relaxed">
+                        {{ $business->features['subtitle'] }}
+                    </p>
+                @endif
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                @foreach ($business->features['items'] as $item)
+                    <div class="bg-white rounded-2xl p-6 sm:p-7 border border-slate-200/80 shadow-xs hover:border-slate-300 hover:shadow-sm transition flex flex-col justify-between">
+                        <div class="space-y-2.5">
+                            <h3 class="text-base font-bold text-slate-900 tracking-tight">
+                                {{ $item['title'] ?? '' }}
+                            </h3>
+                            <p class="text-xs sm:text-sm text-slate-600 leading-relaxed font-light">
+                                {{ $item['description'] ?? '' }}
+                            </p>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    </section>
+@endif
+
 <!-- Product Catalog Grid -->
 <section id="catalog" class="py-12 sm:py-16 px-4 bg-white border-y border-slate-100">
     <div class="max-w-6xl mx-auto">

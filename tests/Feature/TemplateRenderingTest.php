@@ -286,4 +286,67 @@ class TemplateRenderingTest extends TestCase
         $responseDetail->assertSee('Kopi Susu Gula Aren Spesial');
         $responseDetail->assertSee('Espresso ganda berpadu susu segar');
     }
+
+    public function test_minimalist_store_renders_features_section_when_enabled(): void
+    {
+        $this->business->update([
+            'features' => [
+                'enabled' => true,
+                'badge' => 'Mengapa Memilih Kami',
+                'title' => 'Keunggulan Layanan Kami',
+                'subtitle' => 'Standar kepuasan pelanggan',
+                'items' => [
+                    ['title' => 'Kualitas Teruji', 'description' => 'Produk melewati uji ketat.'],
+                    ['title' => 'Respon Cepat', 'description' => 'Admin ramah dan cepat tanggap.'],
+                    ['title' => 'Harga Terbaik', 'description' => 'Bersaing tanpa biaya tersembunyi.'],
+                ],
+            ],
+        ]);
+
+        $template = Template::where('slug', 'minimalist')->first();
+        $website = Website::where('business_id', $this->business->id)->first() ?? Website::create([
+            'business_id' => $this->business->id,
+            'template_id' => $template->id,
+            'slug' => 'test-minimalist',
+            'status' => 'draft',
+        ]);
+        $website->setRelation('business', $this->business);
+        $rendered = view($template->view_path, ['website' => $website, 'business' => $this->business])->render();
+
+        $this->assertStringContainsString('Mengapa Memilih Kami', $rendered);
+        $this->assertStringContainsString('Keunggulan Layanan Kami', $rendered);
+        $this->assertStringContainsString('Kualitas Teruji', $rendered);
+        $this->assertStringContainsString('Respon Cepat', $rendered);
+        $this->assertStringContainsString('Harga Terbaik', $rendered);
+    }
+
+    public function test_minimalist_store_does_not_render_features_section_when_disabled(): void
+    {
+        $this->business->update([
+            'features' => [
+                'enabled' => false,
+                'badge' => 'Mengapa Memilih Kami',
+                'title' => 'Keunggulan Layanan Kami',
+                'subtitle' => 'Standar kepuasan pelanggan',
+                'items' => [
+                    ['title' => 'Kualitas Teruji', 'description' => 'Produk melewati uji ketat.'],
+                    ['title' => 'Respon Cepat', 'description' => 'Admin ramah dan cepat tanggap.'],
+                    ['title' => 'Harga Terbaik', 'description' => 'Bersaing tanpa biaya tersembunyi.'],
+                ],
+            ],
+        ]);
+
+        $template = Template::where('slug', 'minimalist')->first();
+        $website = Website::where('business_id', $this->business->id)->first() ?? Website::create([
+            'business_id' => $this->business->id,
+            'template_id' => $template->id,
+            'slug' => 'test-minimalist',
+            'status' => 'draft',
+        ]);
+        $website->setRelation('business', $this->business);
+        $rendered = view($template->view_path, ['website' => $website, 'business' => $this->business])->render();
+
+        $this->assertStringNotContainsString('Mengapa Memilih Kami', $rendered);
+        $this->assertStringNotContainsString('Kualitas Teruji', $rendered);
+    }
 }
