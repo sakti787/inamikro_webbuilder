@@ -8,6 +8,7 @@ use App\Services\SlugService;
 use App\Services\WebsitePublishValidator;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -63,6 +64,8 @@ class TemplateSelector extends Component
      */
     public function selectTemplate(int $templateId): void
     {
+        $this->authorize('update', $this->website);
+
         $template = Template::query()
             ->where('id', $templateId)
             ->where('is_active', true)
@@ -72,43 +75,45 @@ class TemplateSelector extends Component
             abort(404, 'Template tidak ditemukan atau tidak aktif.');
         }
 
-        $this->website->update([
-            'template_id' => $template->id,
-        ]);
+        DB::transaction(function () use ($template) {
+            $this->website->update([
+                'template_id' => $template->id,
+            ]);
 
-        /** @var array<string, array{primary_color: string, secondary_color: string, font_family: string}> $presets */
-        $presets = [
-            'minimalist' => [
+            /** @var array<string, array{primary_color: string, secondary_color: string, font_family: string}> $presets */
+            $presets = [
+                'minimalist' => [
+                    'primary_color' => '#0F172A',
+                    'secondary_color' => '#334155',
+                    'font_family' => 'Inter',
+                ],
+                'food' => [
+                    'primary_color' => '#DC2626',
+                    'secondary_color' => '#B91C1C',
+                    'font_family' => 'Poppins',
+                ],
+                'modern' => [
+                    'primary_color' => '#2563EB',
+                    'secondary_color' => '#1D4ED8',
+                    'font_family' => 'Plus Jakarta Sans',
+                ],
+            ];
+
+            $preset = $presets[$template->slug] ?? [
                 'primary_color' => '#0F172A',
                 'secondary_color' => '#334155',
                 'font_family' => 'Inter',
-            ],
-            'food' => [
-                'primary_color' => '#DC2626',
-                'secondary_color' => '#B91C1C',
-                'font_family' => 'Poppins',
-            ],
-            'modern' => [
-                'primary_color' => '#2563EB',
-                'secondary_color' => '#1D4ED8',
-                'font_family' => 'Plus Jakarta Sans',
-            ],
-        ];
+            ];
 
-        $preset = $presets[$template->slug] ?? [
-            'primary_color' => '#0F172A',
-            'secondary_color' => '#334155',
-            'font_family' => 'Inter',
-        ];
-
-        $this->website->theme()->updateOrCreate(
-            ['website_id' => $this->website->id],
-            [
-                'primary_color' => $preset['primary_color'],
-                'secondary_color' => $preset['secondary_color'],
-                'font_family' => $preset['font_family'],
-            ]
-        );
+            $this->website->theme()->updateOrCreate(
+                ['website_id' => $this->website->id],
+                [
+                    'primary_color' => $preset['primary_color'],
+                    'secondary_color' => $preset['secondary_color'],
+                    'font_family' => $preset['font_family'],
+                ]
+            );
+        });
 
         $this->website->refresh();
         $this->website->load(['theme', 'template']);
@@ -121,11 +126,15 @@ class TemplateSelector extends Component
      */
     public function togglePublish(): void
     {
+        $this->authorize('publish', $this->website);
+
         if ($this->website->status === 'published') {
-            $this->website->update([
-                'status' => 'draft',
-                'published_at' => null,
-            ]);
+            DB::transaction(function () {
+                $this->website->update([
+                    'status' => 'draft',
+                    'published_at' => null,
+                ]);
+            });
 
             $this->website->refresh();
             session()->flash('success', 'Website toko berhasil diubah menjadi Draft.');
@@ -138,10 +147,12 @@ class TemplateSelector extends Component
                 return;
             }
 
-            $this->website->update([
-                'status' => 'published',
-                'published_at' => now(),
-            ]);
+            DB::transaction(function () {
+                $this->website->update([
+                    'status' => 'published',
+                    'published_at' => now(),
+                ]);
+            });
 
             $this->website->refresh();
             session()->flash('success', 'Selamat! Website toko online Anda berhasil diterbitkan.');

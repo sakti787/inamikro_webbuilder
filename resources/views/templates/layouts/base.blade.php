@@ -60,28 +60,7 @@
         }
     </style>
 
-    <!-- Real-time postMessage Theme Listener for Studio Builder -->
     <script>
-        window.addEventListener('message', (event) => {
-            if (event.origin !== window.location.origin) {
-                return;
-            }
-            if (event.data && event.data.type === 'UPDATE_THEME') {
-                const { primaryColor, secondaryColor, fontFamily, font } = event.data.payload || {};
-                if (primaryColor) {
-                    document.documentElement.style.setProperty('--color-primary', primaryColor);
-                }
-                if (secondaryColor) {
-                    document.documentElement.style.setProperty('--color-secondary', secondaryColor);
-                }
-                const chosenFont = fontFamily || font;
-                if (chosenFont) {
-                    document.documentElement.style.setProperty('--font-family', `'${chosenFont}', sans-serif`);
-                    document.body.style.fontFamily = `'${chosenFont}', sans-serif`;
-                }
-            }
-        });
-
         window.trackWaClick = function(event, url, slug, productId = null, source = 'catalog_card') {
             try {
                 const payload = JSON.stringify({

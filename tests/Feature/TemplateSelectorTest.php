@@ -121,7 +121,7 @@ class TemplateSelectorTest extends TestCase
             ->assertSee('Toko Kelontong, Bengkel, Laundry, Ritel, & Jasa Umum')
             ->assertSee('Sedang Digunakan')
             ->assertSee('Draft / Belum Terbit')
-            ->assertSee('Lihat Toko Online')
+            ->assertSee('Pratinjau Toko (Draft)')
             ->assertSee('Terbitkan Website');
     }
 
@@ -267,5 +267,55 @@ class TemplateSelectorTest extends TestCase
 
         $this->assertEquals('draft', $this->website->fresh()->status);
         $this->assertNull($this->website->fresh()->published_at);
+    }
+
+    public function test_template_selector_renders_draft_preview_link_when_draft(): void
+    {
+        Livewire::actingAs($this->user)
+            ->test(TemplateSelector::class)
+            ->assertSee('Pratinjau Toko (Draft)')
+            ->assertSee(route('builder.preview', $this->website));
+    }
+
+    public function test_template_selector_renders_public_website_link_when_published(): void
+    {
+        $this->website->update([
+            'status' => 'published',
+            'published_at' => now(),
+        ]);
+
+        Livewire::actingAs($this->user)
+            ->test(TemplateSelector::class)
+            ->assertSee('Lihat Toko Online')
+            ->assertSee(route('public.website', $this->website->slug));
+    }
+
+    public function test_user_cannot_mutate_another_business_website_via_policy(): void
+    {
+        $otherUser = User::factory()->create(['role' => 'umkm']);
+        $category = BusinessCategory::first();
+        $otherBusiness = Business::create([
+            'user_id' => $otherUser->id,
+            'category_id' => $category->id,
+            'name' => 'Toko Sebelah',
+            'slug' => 'toko-sebelah',
+            'whatsapp' => '089999999999',
+        ]);
+        $otherWebsite = Website::create([
+            'business_id' => $otherBusiness->id,
+            'template_id' => $this->templateMinimalist->id,
+            'slug' => 'toko-sebelah',
+            'status' => 'draft',
+        ]);
+
+        $this->assertFalse($otherUser->can('update', $this->website));
+        $this->assertFalse($otherUser->can('publish', $this->website));
+        $this->assertTrue($this->user->can('update', $this->website));
+        $this->assertTrue($this->user->can('publish', $this->website));
+
+        $this->assertFalse($this->user->can('update', $otherWebsite));
+        $this->assertFalse($this->user->can('publish', $otherWebsite));
+        $this->assertTrue($otherUser->can('update', $otherWebsite));
+        $this->assertTrue($otherUser->can('publish', $otherWebsite));
     }
 }

@@ -192,7 +192,7 @@ class TemplateRenderingTest extends TestCase
         }
     }
 
-    public function test_css_variables_and_postmessage_script_are_rendered_in_templates(): void
+    public function test_css_variables_and_tracking_script_are_rendered_in_templates(): void
     {
         $template = Template::where('slug', 'minimalist')->firstOrFail();
 
@@ -218,8 +218,7 @@ class TemplateRenderingTest extends TestCase
         $this->assertStringContainsString('--color-primary: #8B5CF6;', $rendered);
         $this->assertStringContainsString('--color-secondary: #6D28D9;', $rendered);
         $this->assertStringContainsString("--font-family: 'Montserrat', sans-serif;", $rendered);
-        $this->assertStringContainsString("window.addEventListener('message'", $rendered);
-        $this->assertStringContainsString("event.data.type === 'UPDATE_THEME'", $rendered);
+        $this->assertStringContainsString('window.trackWaClick', $rendered);
     }
 
     public function test_templates_handle_empty_state_gracefully(): void

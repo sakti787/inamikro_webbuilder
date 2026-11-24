@@ -29,12 +29,12 @@
             <div class="flex flex-wrap items-center gap-3">
                 @if ($website->slug)
                     <a 
-                        href="{{ route('public.website', $website->slug) }}" 
+                        href="{{ $website->status === 'published' ? route('public.website', $website->slug) : route('builder.preview', $website) }}" 
                         target="_blank" 
                         rel="noopener noreferrer"
                         class="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 text-sm font-semibold shadow-xs transition"
                     >
-                        <span>Lihat Toko Online</span>
+                        <span>{{ $website->status === 'published' ? 'Lihat Toko Online' : 'Pratinjau Toko (Draft)' }}</span>
                         <svg class="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                         </svg>
