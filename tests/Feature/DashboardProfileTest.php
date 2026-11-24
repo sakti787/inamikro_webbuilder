@@ -239,7 +239,8 @@ class DashboardProfileTest extends TestCase
         $response = $this->actingAs($user)->get('/dashboard');
         $response->assertStatus(200);
         $response->assertSee('/dashboard/products');
-        $response->assertSee('/dashboard/builder');
+        $response->assertSee('/dashboard/template');
+        $response->assertDontSee('/dashboard/builder');
         $response->assertSee('/dashboard/profile');
     }
 

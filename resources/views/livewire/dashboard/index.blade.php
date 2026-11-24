@@ -14,13 +14,13 @@
 
             <div class="mt-6 flex flex-wrap gap-3">
                 <a 
-                    href="{{ Route::has('dashboard.builder') ? route('dashboard.builder') : url('/dashboard/builder') }}" 
+                    href="{{ route('dashboard.template') }}" 
                     class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white text-blue-700 text-sm font-bold shadow-xs hover:bg-blue-50 transition"
                 >
                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
                     </svg>
-                    <span>Buka Builder Studio</span>
+                    <span>Pilih Tampilan</span>
                 </a>
 
                 @if ($website && $website->slug)
@@ -143,17 +143,17 @@
             </a>
 
             <a 
-                href="{{ Route::has('dashboard.builder') ? route('dashboard.builder') : url('/dashboard/builder') }}" 
+                href="{{ route('dashboard.template') }}" 
                 class="flex items-center gap-4 p-4 rounded-xl border border-slate-200 hover:border-purple-500 hover:bg-purple-50/50 transition group"
             >
                 <div class="w-12 h-12 rounded-xl bg-purple-100 text-purple-600 flex items-center justify-center group-hover:scale-105 transition">
                     <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
                     </svg>
                 </div>
                 <div>
-                    <h3 class="text-sm font-bold text-slate-900 group-hover:text-purple-600 transition">Builder Studio</h3>
-                    <p class="text-xs text-slate-500 mt-0.5">Sesuaikan warna, font, & layout</p>
+                    <h3 class="text-sm font-bold text-slate-900 group-hover:text-purple-600 transition">Pilih Tampilan</h3>
+                    <p class="text-xs text-slate-500 mt-0.5">Pilih template dan tata letak toko</p>
                 </div>
             </a>
 

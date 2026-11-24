@@ -4,9 +4,9 @@ namespace Tests\Feature;
 
 use App\Livewire\Admin\Dashboard as AdminDashboard;
 use App\Livewire\Banners\BannerManager;
-use App\Livewire\Builder\Studio;
 use App\Livewire\Dashboard\Index as DashboardIndex;
 use App\Livewire\Dashboard\ProfileForm;
+use App\Livewire\Dashboard\TemplateSelector;
 use App\Livewire\Products\ProductForm;
 use App\Models\Banner;
 use App\Models\Business;
@@ -48,7 +48,7 @@ class FullUmkmJourneyTest extends TestCase
      * 2. Business profile update (description, address, tagline, WhatsApp)
      * 3. Product creation with pricing, discounts, stock, and variant options
      * 4. Hero banner upload
-     * 5. Visual Studio Builder customization (template, colors, typography)
+     * 5. Simplified Template Selection with curated design presets
      * 6. Publishing validation & toggling website status to published
      * 7. Public storefront visit and analytics recording
      * 8. Public product detail page access
@@ -203,26 +203,19 @@ class FullUmkmJourneyTest extends TestCase
         $this->assertTrue($banner->is_active);
 
         // -------------------------------------------------------------
-        // Step 5: Visual Studio Builder Customization
+        // Step 5: Simplified Template Selection & Curated Presets
         // -------------------------------------------------------------
         Livewire::actingAs($user)
-            ->test(Studio::class)
-            ->call('changeTemplate', $foodTemplate->id)
-            ->assertSet('templateId', $foodTemplate->id)
-            ->set('primaryColor', '#DC2626')
-            ->set('secondaryColor', '#991B1B')
-            ->set('fontFamily', 'Poppins')
-            ->call('saveTheme')
-            ->assertHasNoErrors()
-            ->assertDispatched('theme-saved')
-            ->assertSee('Tema website berhasil disimpan.');
+            ->test(TemplateSelector::class)
+            ->call('selectTemplate', $foodTemplate->id)
+            ->assertSee('Tampilan toko berhasil diubah ke Food & Beverage!');
 
         $website->refresh();
         $this->assertSame($foodTemplate->id, $website->template_id);
 
         $theme->refresh();
         $this->assertSame('#DC2626', $theme->primary_color);
-        $this->assertSame('#991B1B', $theme->secondary_color);
+        $this->assertSame('#B91C1C', $theme->secondary_color);
         $this->assertSame('Poppins', $theme->font_family);
 
         // Preview route accessible by owner
@@ -240,10 +233,9 @@ class FullUmkmJourneyTest extends TestCase
         $this->assertEmpty($validationResult->getErrors());
 
         Livewire::actingAs($user)
-            ->test(Studio::class)
+            ->test(TemplateSelector::class)
             ->call('togglePublish')
-            ->assertDispatched('status-toggled')
-            ->assertSee('Website berhasil diterbitkan');
+            ->assertSee('Selamat! Website toko online Anda berhasil diterbitkan.');
 
         $website->refresh();
         $this->assertSame('published', $website->status);
@@ -354,10 +346,9 @@ class FullUmkmJourneyTest extends TestCase
         // Step 12: Unpublish Lifecycle & Public 404 Verification
         // -------------------------------------------------------------
         Livewire::actingAs($user)
-            ->test(Studio::class)
+            ->test(TemplateSelector::class)
             ->call('togglePublish')
-            ->assertDispatched('status-toggled')
-            ->assertSee('Website berhasil diubah menjadi Draft');
+            ->assertSee('Website toko berhasil diubah menjadi Draft.');
 
         $website->refresh();
         $this->assertSame('draft', $website->status);

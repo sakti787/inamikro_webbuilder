@@ -7,7 +7,6 @@ use App\Livewire\Admin\Dashboard as AdminDashboard;
 use App\Livewire\Admin\TemplateManagement;
 use App\Livewire\Admin\UserManagement;
 use App\Livewire\Banners\BannerManager;
-use App\Livewire\Builder\Studio;
 use App\Livewire\Dashboard\Index as DashboardIndex;
 use App\Livewire\Dashboard\ProfileForm;
 use App\Livewire\Dashboard\TemplateSelector;
@@ -45,7 +44,6 @@ Route::middleware('auth')->group(function () {
         Route::get('/products/{product}/edit', ProductForm::class)->name('dashboard.products.edit');
         Route::get('/banners', BannerManager::class)->name('dashboard.banners');
         Route::get('/template', TemplateSelector::class)->name('dashboard.template');
-        Route::get('/builder', Studio::class)->name('dashboard.builder');
     });
 
     Route::middleware('umkm.owner')->group(function () {
