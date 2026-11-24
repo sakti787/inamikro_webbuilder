@@ -321,7 +321,6 @@
                                 type="text" 
                                 id="features_badge" 
                                 wire:model="features_badge" 
-                                value="{{ $features_badge }}"
                                 placeholder="Contoh: Mengapa Memilih Kami" 
                                 class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
                             >
@@ -339,7 +338,6 @@
                                 type="text" 
                                 id="features_title" 
                                 wire:model="features_title" 
-                                value="{{ $features_title }}"
                                 placeholder="Contoh: Keunggulan Layanan Kami" 
                                 class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
                                 required
@@ -359,7 +357,6 @@
                             type="text" 
                             id="features_subtitle" 
                             wire:model="features_subtitle" 
-                            value="{{ $features_subtitle }}"
                             placeholder="Contoh: Komitmen kami dalam memberikan standar mutu dan kepuasan terbaik bagi Anda." 
                             class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
                         >
@@ -399,7 +396,7 @@
                                     </div>
                                     <div>
                                         <label for="features_item_{{ $i }}_description" class="block text-[11px] font-semibold text-slate-600 mb-1">
-                                            Deskripsi Ringkas
+                                            Deskripsi Ringkas <span class="text-red-500">*</span>
                                         </label>
                                         <textarea 
                                             id="features_item_{{ $i }}_description"
@@ -407,7 +404,8 @@
                                             rows="2"
                                             placeholder="Deskripsi singkat keunggulan..."
                                             class="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition bg-white"
-                                        >{{ $features_items[$i]['description'] ?? '' }}</textarea>
+                                            required
+                                        ></textarea>
                                         @error('features_items.' . $i . '.description')
                                             <p class="text-[11px] text-red-600 font-semibold mt-1">{{ $message }}</p>
                                         @enderror
