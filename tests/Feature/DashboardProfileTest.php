@@ -349,4 +349,60 @@ class DashboardProfileTest extends TestCase
             ->assertSet('lastUpdatedFormatted', null)
             ->assertSet('lastUpdatedHuman', null);
     }
+
+    public function test_profile_form_renders_last_edited_banner_in_view(): void
+    {
+        $user = User::factory()->create(['role' => 'umkm']);
+        $business = Business::create([
+            'user_id' => $user->id,
+            'name' => 'Toko Spanduk',
+            'slug' => 'toko-spanduk',
+            'whatsapp' => '08123456789',
+            'logo' => 'logos/toko-spanduk.png',
+            'updated_at' => now()->subDay(),
+        ]);
+
+        $expectedFormatted = $business->updated_at->locale('id')->isoFormat('D MMMM Y, HH:mm').' WIB';
+        $expectedHuman = $business->updated_at->locale('id')->diffForHumans();
+
+        Livewire::actingAs($user)
+            ->test(ProfileForm::class)
+            ->assertSee('Data Profil Tersimpan')
+            ->assertSee($expectedFormatted)
+            ->assertSee($expectedHuman)
+            ->assertSee('Seluruh data di bawah ini adalah data yang saat ini aktif tampil pada website toko online Anda.')
+            ->assertSee('Logo Aktif Saat Ini');
+    }
+
+    public function test_profile_form_renders_helpful_placeholders_for_empty_optional_fields(): void
+    {
+        $user = User::factory()->create(['role' => 'umkm']);
+        Business::create([
+            'user_id' => $user->id,
+            'name' => 'Toko Placeholders',
+            'slug' => 'toko-placeholders',
+            'whatsapp' => '08123456789',
+            'phone' => null,
+            'description' => null,
+            'address' => null,
+            'operating_hours' => null,
+        ]);
+
+        Livewire::actingAs($user)
+            ->test(ProfileForm::class)
+            ->assertSeeHtml('placeholder="Belum diisi (Contoh: 021-1234567 atau 081234567890)"')
+            ->assertSeeHtml('placeholder="Belum diisi (Jelaskan mengenai produk, keunikan, atau profil usaha Anda...)"')
+            ->assertSeeHtml('placeholder="Belum diisi (Alamat lengkap lokasi toko/workshop Anda)"')
+            ->assertSeeHtml('placeholder="Belum diisi (Contoh: Senin - Sabtu: 08:00 - 21:00)"');
+    }
+
+    public function test_profile_form_renders_new_profile_banner_when_never_updated(): void
+    {
+        $user = User::factory()->create(['role' => 'umkm']);
+
+        Livewire::actingAs($user)
+            ->test(ProfileForm::class)
+            ->assertSee('Data Profil Tersimpan')
+            ->assertSee('Profil toko baru dan belum pernah diperbarui.');
+    }
 }

@@ -33,6 +33,38 @@
     @endif
 
     <form wire:submit="save" class="space-y-6">
+        <!-- Status Banner / Last Edited Card -->
+        <div class="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs">
+            <div class="flex items-start gap-3.5">
+                <div class="p-2.5 rounded-xl bg-blue-50 text-blue-600 flex-shrink-0">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                    </svg>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+                        <h2 class="text-sm font-bold text-slate-900">
+                            Data Profil Tersimpan
+                        </h2>
+                        @if ($lastUpdatedFormatted)
+                            <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 bg-slate-100 px-2.5 py-1 rounded-full w-fit">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                Terakhir diperbarui: {{ $lastUpdatedFormatted }}
+                                <span class="text-slate-400 font-normal">({{ $lastUpdatedHuman }})</span>
+                            </span>
+                        @endif
+                    </div>
+                    <p class="mt-1 text-xs text-slate-500">
+                        @if ($lastUpdatedFormatted)
+                            Seluruh data di bawah ini adalah data yang saat ini aktif tampil pada website toko online Anda.
+                        @else
+                            Profil toko baru dan belum pernah diperbarui.
+                        @endif
+                    </p>
+                </div>
+            </div>
+        </div>
+
         <!-- Logo Brand Section -->
         <div class="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-xs">
             <h2 class="text-base font-bold text-slate-900 mb-1">
@@ -51,8 +83,13 @@
                             <span class="absolute bottom-0 inset-x-0 bg-blue-600/90 text-white text-[10px] font-bold py-0.5 text-center">Baru</span>
                         </div>
                     @elseif ($existingLogo)
-                        <div class="w-24 h-24 rounded-2xl overflow-hidden ring-1 ring-slate-200 shadow-xs bg-slate-50">
-                            <img src="{{ asset('storage/' . $existingLogo) }}" alt="{{ $name }}" class="w-full h-full object-cover">
+                        <div class="flex flex-col items-center space-y-1.5">
+                            <div class="w-24 h-24 rounded-2xl overflow-hidden ring-1 ring-slate-200 shadow-xs bg-slate-50">
+                                <img src="{{ asset('storage/' . $existingLogo) }}" alt="{{ $name }}" class="w-full h-full object-cover">
+                            </div>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                Logo Aktif Saat Ini
+                            </span>
                         </div>
                     @else
                         <div class="w-24 h-24 rounded-2xl bg-blue-50 text-blue-600 ring-1 ring-blue-200/60 flex items-center justify-center font-bold text-2xl shadow-xs">
@@ -140,7 +177,7 @@
                     id="description" 
                     wire:model="description" 
                     rows="3" 
-                    placeholder="Jelaskan mengenai produk, keunikan, atau profil usaha Anda..."
+                    placeholder="Belum diisi (Jelaskan mengenai produk, keunikan, atau profil usaha Anda...)"
                     class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
                 ></textarea>
                 @error('description')
@@ -188,7 +225,7 @@
                         type="text" 
                         id="phone" 
                         wire:model="phone" 
-                        placeholder="Contoh: 021-1234567 atau 081234567890" 
+                        placeholder="Belum diisi (Contoh: 021-1234567 atau 081234567890)" 
                         class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
                     >
                     @error('phone')
@@ -214,7 +251,7 @@
                         id="address" 
                         wire:model="address" 
                         rows="2" 
-                        placeholder="Alamat lengkap lokasi toko/workshop (misal: Jl. Sudirman No. 10, Jakarta Pusat)"
+                        placeholder="Belum diisi (Alamat lengkap lokasi toko/workshop Anda)"
                         class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
                     ></textarea>
                     @error('address')
@@ -231,7 +268,7 @@
                         type="text" 
                         id="operating_hours" 
                         wire:model="operating_hours" 
-                        placeholder="Contoh: Senin - Sabtu: 08:00 - 21:00 (Minggu Libur)" 
+                        placeholder="Belum diisi (Contoh: Senin - Sabtu: 08:00 - 21:00)" 
                         class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
                     >
                     <p class="text-xs text-slate-400 mt-1">
