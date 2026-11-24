@@ -10,6 +10,7 @@ use App\Livewire\Banners\BannerManager;
 use App\Livewire\Builder\Studio;
 use App\Livewire\Dashboard\Index as DashboardIndex;
 use App\Livewire\Dashboard\ProfileForm;
+use App\Livewire\Dashboard\TemplateSelector;
 use App\Livewire\Products\ProductForm;
 use App\Livewire\Products\ProductList;
 use Illuminate\Support\Facades\Route;
@@ -43,6 +44,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/products/create', ProductForm::class)->name('dashboard.products.create');
         Route::get('/products/{product}/edit', ProductForm::class)->name('dashboard.products.edit');
         Route::get('/banners', BannerManager::class)->name('dashboard.banners');
+        Route::get('/template', TemplateSelector::class)->name('dashboard.template');
         Route::get('/builder', Studio::class)->name('dashboard.builder');
     });
 
