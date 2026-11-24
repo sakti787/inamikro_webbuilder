@@ -291,6 +291,8 @@ class DashboardProfileTest extends TestCase
 
     public function test_profile_form_exposes_formatted_last_updated_timestamp(): void
     {
+        $this->freezeTime();
+
         $user = User::factory()->create(['role' => 'umkm']);
         $updatedAt = now()->subHours(2);
         $business = Business::create([
@@ -404,5 +406,109 @@ class DashboardProfileTest extends TestCase
             ->test(ProfileForm::class)
             ->assertSee('Data Profil Tersimpan')
             ->assertSee('Profil toko baru dan belum pernah diperbarui.');
+    }
+
+    public function test_profile_form_hydrates_existing_features_from_business(): void
+    {
+        $user = User::factory()->create(['role' => 'umkm']);
+        $features = [
+            'enabled' => true,
+            'badge' => 'Kelebihan Kami',
+            'title' => 'Mengapa Belanja di Toko Kami?',
+            'subtitle' => 'Kami selalu memberikan yang terbaik.',
+            'items' => [
+                ['title' => 'Item 1', 'description' => 'Desc 1'],
+                ['title' => 'Item 2', 'description' => 'Desc 2'],
+                ['title' => 'Item 3', 'description' => 'Desc 3'],
+            ],
+        ];
+
+        Business::create([
+            'user_id' => $user->id,
+            'name' => 'Toko Uji',
+            'slug' => 'toko-uji',
+            'whatsapp' => '081234567890',
+            'features' => $features,
+        ]);
+
+        Livewire::actingAs($user)
+            ->test(ProfileForm::class)
+            ->assertSet('features_enabled', true)
+            ->assertSet('features_badge', 'Kelebihan Kami')
+            ->assertSet('features_title', 'Mengapa Belanja di Toko Kami?')
+            ->assertSet('features_subtitle', 'Kami selalu memberikan yang terbaik.')
+            ->assertSet('features_items', $features['items']);
+    }
+
+    public function test_profile_form_auto_populates_default_template_when_features_enabled_is_toggled_on(): void
+    {
+        $user = User::factory()->create(['role' => 'umkm']);
+        Business::create([
+            'user_id' => $user->id,
+            'name' => 'Toko Uji',
+            'slug' => 'toko-uji',
+            'whatsapp' => '081234567890',
+            'features' => null,
+        ]);
+
+        Livewire::actingAs($user)
+            ->test(ProfileForm::class)
+            ->assertSet('features_enabled', false)
+            ->set('features_enabled', true)
+            ->assertSet('features_badge', 'Mengapa Memilih Kami')
+            ->assertSet('features_title', 'Keunggulan Layanan Kami')
+            ->assertSet('features_subtitle', 'Komitmen kami dalam memberikan standar mutu dan kepuasan terbaik')
+            ->assertCount('features_items', 3);
+    }
+
+    public function test_profile_form_validates_required_feature_fields_when_features_enabled(): void
+    {
+        $user = User::factory()->create(['role' => 'umkm']);
+        Business::create([
+            'user_id' => $user->id,
+            'name' => 'Toko Uji',
+            'slug' => 'toko-uji',
+            'whatsapp' => '081234567890',
+        ]);
+
+        Livewire::actingAs($user)
+            ->test(ProfileForm::class)
+            ->set('features_enabled', true)
+            ->set('features_title', '')
+            ->set('features_items.0.title', '')
+            ->call('save')
+            ->assertHasErrors(['features_title', 'features_items.0.title']);
+    }
+
+    public function test_profile_form_saves_features_data_successfully(): void
+    {
+        $user = User::factory()->create(['role' => 'umkm']);
+        $business = Business::create([
+            'user_id' => $user->id,
+            'name' => 'Toko Uji',
+            'slug' => 'toko-uji',
+            'whatsapp' => '081234567890',
+        ]);
+
+        Livewire::actingAs($user)
+            ->test(ProfileForm::class)
+            ->set('features_enabled', true)
+            ->set('features_badge', 'Alasan Memilih')
+            ->set('features_title', 'Keunggulan Toko Kami')
+            ->set('features_subtitle', 'Pelayanan nomor satu')
+            ->set('features_items.0.title', 'Bahan Terbaik')
+            ->set('features_items.0.description', 'Dari sumber pilihan.')
+            ->set('features_items.1.title', 'Pengiriman Cepat')
+            ->set('features_items.1.description', 'Sampai di hari yang sama.')
+            ->set('features_items.2.title', 'Garansi Uang Kembali')
+            ->set('features_items.2.description', '100% aman.')
+            ->call('save')
+            ->assertHasNoErrors();
+
+        $fresh = $business->fresh();
+        $this->assertTrue($fresh->features['enabled']);
+        $this->assertSame('Alasan Memilih', $fresh->features['badge']);
+        $this->assertSame('Keunggulan Toko Kami', $fresh->features['title']);
+        $this->assertSame('Bahan Terbaik', $fresh->features['items'][0]['title']);
     }
 }
