@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Dashboard;
 
+use App\Models\Business;
 use App\Models\BusinessCategory;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Auth;
@@ -37,6 +38,10 @@ class ProfileForm extends Component
     public $logo = null;
 
     public ?string $existingLogo = null;
+
+    public ?string $lastUpdatedHuman = null;
+
+    public ?string $lastUpdatedFormatted = null;
 
     /**
      * Validation rules for business profile.
@@ -92,6 +97,8 @@ class ProfileForm extends Component
             } else {
                 $this->operating_hours = $business->operating_hours;
             }
+
+            $this->updateLastEditedTimestamps($business);
         }
     }
 
@@ -128,8 +135,18 @@ class ProfileForm extends Component
         }
 
         $business->update($updateData);
+        $business->refresh();
+        $this->updateLastEditedTimestamps($business);
 
         session()->flash('success', 'Profil usaha berhasil diperbarui.');
+    }
+
+    protected function updateLastEditedTimestamps(?Business $business): void
+    {
+        if ($business?->updated_at) {
+            $this->lastUpdatedFormatted = $business->updated_at->locale('id')->isoFormat('D MMMM Y, HH:mm').' WIB';
+            $this->lastUpdatedHuman = $business->updated_at->locale('id')->diffForHumans();
+        }
     }
 
     public function render(): View

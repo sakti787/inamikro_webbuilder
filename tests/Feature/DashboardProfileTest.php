@@ -288,4 +288,65 @@ class DashboardProfileTest extends TestCase
         $this->assertSame('Toko Logo Baru Name', $business->name);
         $this->assertSame('logos/existing-logo.png', $business->logo);
     }
+
+    public function test_profile_form_exposes_formatted_last_updated_timestamp(): void
+    {
+        $user = User::factory()->create(['role' => 'umkm']);
+        $updatedAt = now()->subHours(2);
+        $business = Business::create([
+            'user_id' => $user->id,
+            'name' => 'Toko Timestamp',
+            'slug' => 'toko-timestamp',
+            'whatsapp' => '08123456789',
+            'updated_at' => $updatedAt,
+        ]);
+
+        $expectedFormatted = $business->updated_at->locale('id')->isoFormat('D MMMM Y, HH:mm').' WIB';
+        $expectedHuman = $business->updated_at->locale('id')->diffForHumans();
+
+        Livewire::actingAs($user)
+            ->test(ProfileForm::class)
+            ->assertSet('lastUpdatedFormatted', $expectedFormatted)
+            ->assertSet('lastUpdatedHuman', $expectedHuman);
+    }
+
+    public function test_profile_form_refreshes_last_updated_timestamp_after_saving(): void
+    {
+        $this->freezeTime();
+
+        $user = User::factory()->create(['role' => 'umkm']);
+        $business = Business::create([
+            'user_id' => $user->id,
+            'name' => 'Toko Refresh Timestamp',
+            'slug' => 'toko-refresh-timestamp',
+            'whatsapp' => '08123456789',
+            'updated_at' => now()->subDay(),
+        ]);
+
+        $component = Livewire::actingAs($user)
+            ->test(ProfileForm::class);
+
+        $this->travel(2)->hours();
+
+        $component->set('name', 'Toko Refresh Baru')
+            ->call('save')
+            ->assertHasNoErrors();
+
+        $business->refresh();
+        $expectedFormatted = $business->updated_at->locale('id')->isoFormat('D MMMM Y, HH:mm').' WIB';
+        $expectedHuman = $business->updated_at->locale('id')->diffForHumans();
+
+        $component->assertSet('lastUpdatedFormatted', $expectedFormatted)
+            ->assertSet('lastUpdatedHuman', $expectedHuman);
+    }
+
+    public function test_profile_form_handles_null_updated_at_gracefully(): void
+    {
+        $user = User::factory()->create(['role' => 'umkm']);
+
+        Livewire::actingAs($user)
+            ->test(ProfileForm::class)
+            ->assertSet('lastUpdatedFormatted', null)
+            ->assertSet('lastUpdatedHuman', null);
+    }
 }
