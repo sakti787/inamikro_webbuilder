@@ -142,7 +142,7 @@
                 ];
             @endphp
 
-            <div class="bg-white rounded-2xl border transition-all duration-200 overflow-hidden flex flex-col justify-between {{ $isActive ? 'border-emerald-500 ring-2 ring-emerald-500/20 shadow-md' : 'border-slate-200 hover:border-slate-300 shadow-xs' }}">
+            <div class="group bg-white rounded-2xl border transition-all duration-200 overflow-hidden flex flex-col justify-between {{ $isActive ? 'border-emerald-500 ring-2 ring-emerald-500/20 shadow-md' : 'border-slate-200 hover:border-slate-300 shadow-xs' }}">
                 <div>
                     <!-- Visual Mockup Accent Header -->
                     <div class="h-36 bg-gradient-to-br {{ $meta['banner'] }} p-4 relative flex flex-col justify-between text-white overflow-hidden">
