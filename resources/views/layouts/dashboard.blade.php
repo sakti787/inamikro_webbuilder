@@ -13,7 +13,6 @@
 
     <!-- Scripts & Styles -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
-    @livewireStyles
 </head>
 <body class="h-full text-slate-800 antialiased font-sans" x-data="{ sidebarOpen: false }">
     @php
@@ -280,6 +279,5 @@
         </div>
     </div>
 
-    @livewireScripts
 </body>
 </html>
