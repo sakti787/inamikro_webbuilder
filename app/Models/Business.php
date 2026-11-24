@@ -28,6 +28,7 @@ class Business extends Model
         'email',
         'address',
         'operating_hours',
+        'features',
     ];
 
     /**
@@ -39,6 +40,7 @@ class Business extends Model
     {
         return [
             'operating_hours' => 'array',
+            'features' => 'array',
         ];
     }
 

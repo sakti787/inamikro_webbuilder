@@ -68,6 +68,36 @@ class DatabaseSchemaTest extends TestCase
         $this->assertEquals($business->id, $website->business->id);
     }
 
+    public function test_businesses_table_has_features_json_column_and_casts_to_array(): void
+    {
+        $user = User::factory()->create(['role' => 'umkm']);
+        $business = Business::create([
+            'user_id' => $user->id,
+            'name' => 'Toko Fitur',
+            'slug' => 'toko-fitur',
+            'whatsapp' => '081234567890',
+            'features' => [
+                'enabled' => true,
+                'badge' => 'Mengapa Memilih Kami',
+                'title' => 'Keunggulan Layanan Kami',
+                'subtitle' => 'Komitmen mutu terbaik',
+                'items' => [
+                    ['title' => 'Kualitas Terjamin', 'description' => 'Kontrol ketat.'],
+                ],
+            ],
+        ]);
+
+        $this->assertDatabaseHas('businesses', [
+            'id' => $business->id,
+        ]);
+
+        $fresh = $business->fresh();
+        $this->assertIsArray($fresh->features);
+        $this->assertTrue($fresh->features['enabled']);
+        $this->assertSame('Mengapa Memilih Kami', $fresh->features['badge']);
+        $this->assertSame('Kualitas Terjamin', $fresh->features['items'][0]['title']);
+    }
+
     public function test_business_products_categories_images_relationships_work(): void
     {
         $user = User::factory()->create();
