@@ -195,4 +195,53 @@ class AdminViewTest extends TestCase
         $response->assertSee('admin-assets/settings.js', false);
         $response->assertSee('admin-assets/app.js', false);
     }
+
+    public function test_admin_page_escapes_xss_payloads_in_config_json_and_html_body(): void
+    {
+        $payload = '</script><script>alert(1)</script>';
+
+        $admin = User::factory()->create([
+            'name' => $payload,
+            'email' => 'xss-admin@inamikro.id',
+            'role' => 'admin',
+        ]);
+
+        $umkm = User::factory()->create([
+            'name' => 'Pemilik UMKM',
+            'business_name' => $payload,
+            'slug' => 'umkm-xss-test',
+            'role' => 'umkm',
+        ]);
+
+        Site::factory()->for($umkm)->create([
+            'template_id' => 'warung',
+            'slug' => $umkm->slug,
+            'status' => 'pending',
+            'content' => [
+                'nama' => $payload,
+                'wa' => '081234567890',
+                'jam' => '08.00 - 17.00',
+                'produk' => [['nama' => 'Produk', 'harga' => '10000', 'ket' => 'Ket']],
+            ],
+            'rendered_html' => '<!doctype html><html><body>'.$payload.'</body></html>',
+        ]);
+
+        $response = $this->actingAs($admin)->get(route('admin'));
+
+        $response->assertOk();
+        $response->assertDontSee($payload, false);
+
+        $html = (string) $response->getContent();
+        $this->assertSame(
+            1,
+            preg_match('/<script>\s*window\.INAWEB_ADMIN_CONFIG\s*=\s*(\{.*?\});\s*<\/script>/s', $html, $matches)
+        );
+        $this->assertStringNotContainsString('</script>', $matches[1]);
+
+        $config = json_decode($matches[1], true);
+        $this->assertIsArray($config);
+        $this->assertSame($payload, $config['userName']);
+        $this->assertSame($payload, $config['initialData']['umkm'][0]['business_name']);
+        $this->assertSame('<!doctype html><html><body>'.$payload.'</body></html>', $config['initialData']['umkm'][0]['rendered_html']);
+    }
 }

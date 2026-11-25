@@ -33,15 +33,18 @@ class SaveAdminContactRequest extends FormRequest
 
             if ($trimmed === '') {
                 $updates['admin_whatsapp'] = '';
-            } else {
+            } elseif (preg_match('/^[\d\s+\-().]+$/', $trimmed) === 1) {
                 $digits = preg_replace('/\D+/', '', $trimmed) ?? '';
 
                 if ($digits !== '' && str_starts_with($digits, '0')) {
                     $digits = '62'.substr($digits, 1);
                 }
 
-                // Preserve non-digit raw input so regex validation rejects invalid strings like "abc".
+                // Preserve punctuation-only input so regex validation still rejects it.
                 $updates['admin_whatsapp'] = $digits !== '' ? $digits : $trimmed;
+            } else {
+                // Keep invalid characters intact so regex validation rejects inputs like "081234567890abc".
+                $updates['admin_whatsapp'] = $trimmed;
             }
         }
 

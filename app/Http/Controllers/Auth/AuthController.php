@@ -42,16 +42,17 @@ class AuthController extends Controller
         $intended = $request->session()->pull('url.intended');
         $intendedPath = is_string($intended) ? (string) parse_url($intended, PHP_URL_PATH) : '';
         $isAdminPath = $intendedPath === '/admin' || str_starts_with($intendedPath, '/admin/');
+        $isApiPath = $intendedPath === '/api' || str_starts_with($intendedPath, '/api/');
 
         if ($user?->role === 'admin') {
-            if (is_string($intended) && $isAdminPath) {
+            if (is_string($intended) && $isAdminPath && ! $isApiPath) {
                 return redirect()->to($intended);
             }
 
             return redirect()->route('admin');
         }
 
-        if (is_string($intended) && $intended !== '' && ! $isAdminPath) {
+        if (is_string($intended) && $intended !== '' && ! $isAdminPath && ! $isApiPath) {
             return redirect()->to($intended);
         }
 

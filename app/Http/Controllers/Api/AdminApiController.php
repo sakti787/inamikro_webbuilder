@@ -16,6 +16,7 @@ use App\Models\SiteHistory;
 use App\Models\TemplateSetting;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -176,7 +177,7 @@ class AdminApiController extends Controller
     /**
      * Approve a complete UMKM site for publication.
      */
-    public function approve(User $user): JsonResponse
+    public function approve(Request $request, User $user): JsonResponse
     {
         $site = $this->resolveUmkmSite($user);
         $content = is_array($site->content) ? $site->content : [];
@@ -190,7 +191,7 @@ class AdminApiController extends Controller
         }
 
         /** @var User $admin */
-        $admin = request()->user();
+        $admin = $request->user();
 
         DB::transaction(function () use ($user, $site, $admin): void {
             $site->update([
@@ -588,6 +589,8 @@ class AdminApiController extends Controller
             ? trim((string) ($site->content['nama'] ?? ''))
             : '';
 
-        return $contentName !== '' ? $contentName : $user->business_name;
+        $name = $contentName !== '' ? $contentName : (string) $user->business_name;
+
+        return mb_substr($name, 0, 150);
     }
 }

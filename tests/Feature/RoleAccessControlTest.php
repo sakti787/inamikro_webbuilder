@@ -49,6 +49,48 @@ class RoleAccessControlTest extends TestCase
         $this->assertAuthenticatedAs($umkm);
     }
 
+    public function test_login_never_redirects_to_api_intended_urls(): void
+    {
+        $admin = User::factory()->create([
+            'role' => 'admin',
+            'email' => 'admin-api-intended@example.com',
+            'password' => Hash::make('sandiaman123'),
+        ]);
+
+        $umkm = User::factory()->create([
+            'role' => 'umkm',
+            'email' => 'umkm-api-intended@example.com',
+            'password' => Hash::make('sandiaman123'),
+        ]);
+
+        $this->withSession(['url.intended' => url('/api/site')])
+            ->post('/login', [
+                'email' => 'umkm-api-intended@example.com',
+                'password' => 'sandiaman123',
+            ])
+            ->assertRedirect(route('studio'));
+
+        $this->post(route('logout'));
+
+        $this->withSession(['url.intended' => '/api'])
+            ->post('/login', [
+                'email' => 'umkm-api-intended@example.com',
+                'password' => 'sandiaman123',
+            ])
+            ->assertRedirect(route('studio'));
+
+        $this->post(route('logout'));
+
+        $this->withSession(['url.intended' => url('/api/admin/bootstrap')])
+            ->post('/login', [
+                'email' => 'admin-api-intended@example.com',
+                'password' => 'sandiaman123',
+            ])
+            ->assertRedirect(route('admin'));
+
+        $this->assertAuthenticatedAs($admin);
+    }
+
     public function test_root_redirects_based_on_user_role(): void
     {
         $this->get('/')

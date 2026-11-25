@@ -396,6 +396,38 @@ function renderGallery() {
       </article>`;
     })
     .join("");
+
+  const activeChip = $("#filters .chip.is-active");
+  applyGalleryFilter(activeChip ? activeChip.dataset.cat || "all" : "all");
+}
+
+function applyGalleryFilter(cat = "all") {
+  const grid = $("#templateGrid");
+  if (!grid) return;
+  const cards = $$(".card", grid);
+  let visibleCount = 0;
+
+  cards.forEach((card) => {
+    const show = cat === "all" || card.dataset.cat === cat;
+    card.style.display = show ? "" : "none";
+    if (show) visibleCount++;
+  });
+
+  let emptyNotice = $("#templateFilterEmpty", grid);
+  if (cards.length > 0 && visibleCount === 0) {
+    if (!emptyNotice) {
+      emptyNotice = document.createElement("div");
+      emptyNotice.id = "templateFilterEmpty";
+      emptyNotice.className = "empty-state";
+      emptyNotice.style.gridColumn = "1 / -1";
+      emptyNotice.innerHTML =
+        "<h3>Belum ada template aktif pada kategori ini.</h3><p>Pilih kategori lain atau tampilkan semua template yang tersedia.</p>";
+      grid.appendChild(emptyNotice);
+    }
+    emptyNotice.hidden = false;
+  } else if (emptyNotice) {
+    emptyNotice.remove();
+  }
 }
 
 /* ---------------- form ---------------- */
@@ -1021,8 +1053,10 @@ async function openEditor(id, fromGallery = false) {
   renderChecklist();
 
   if (carried) {
-    await saveNow();
-    toast("Isi dan foto tersalin ke template " + tpl.name + ".");
+    const saved = await saveNow();
+    if (saved) {
+      toast("Isi dan foto tersalin ke template " + tpl.name + ".");
+    }
   }
   window.scrollTo({ top: 0, behavior: "instant" });
 }
@@ -1160,8 +1194,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const c = e.target.closest(".chip");
     if (!c) return;
     $$(".chip").forEach((x) => x.classList.toggle("is-active", x === c));
-    const cat = c.dataset.cat;
-    $$(".card").forEach((card) => (card.style.display = cat === "all" || card.dataset.cat === cat ? "" : "none"));
+    applyGalleryFilter(c.dataset.cat || "all");
   });
 
   $("#btnBack").addEventListener("click", backToGallery);

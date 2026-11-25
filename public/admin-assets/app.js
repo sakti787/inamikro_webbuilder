@@ -243,21 +243,22 @@
     $("#detailMeta").textContent = (u.email || "") + " · " + u.status;
     $("#detailTpl").textContent = noSite ? "Belum ada draf situs" : "Template: " + tpl.name;
 
+    const safePublicUrl = typeof u.public_url === "string" && /^https?:\/\//i.test(u.public_url) ? u.public_url : "";
     const publicLink = $("#detailPublicLink");
     if (publicLink) {
-      if (u.status_key === "published" && u.public_url) {
+      if (u.status_key === "published" && safePublicUrl) {
         publicLink.hidden = false;
-        publicLink.href = u.public_url;
+        publicLink.href = safePublicUrl;
       } else {
         publicLink.hidden = true;
-        publicLink.removeAttribute("href");
+        publicLink.href = "#";
       }
     }
 
     const infoRows = [
       ["Status", badge(u.status)],
-      ...(u.status_key === "published" && u.public_url
-        ? [["Alamat situs", `<a class="info-link" href="${h(u.public_url)}" target="_blank" rel="noopener">${h(u.public_url)} ↗</a>`]]
+      ...(u.status_key === "published" && safePublicUrl
+        ? [["Alamat situs", `<a class="info-link" href="${h(safePublicUrl)}" target="_blank" rel="noopener">${h(safePublicUrl)} ↗</a>`]]
         : []),
       ["WhatsApp", h(s.wa) || "—"],
       ["Alamat", h(s.alamat) || "—"],
@@ -392,7 +393,7 @@
     template: "▧", settings: "⚙", general: "•",
   };
   function logRow(e, full) {
-    const icon = LOG_ICON[e.kind] || LOG_ICON.general;
+    const icon = Object.hasOwn(LOG_ICON, e.kind) ? LOG_ICON[e.kind] : LOG_ICON.general;
     return `<div class="log-row">
       <span class="log-ico k-${h(e.kind || "general")}">${icon}</span>
       <div class="log-body"><b>${h(e.title)}</b><span>${h(e.who || "Sistem")} · ${h(LOG.timeAgo(e.at))}</span>${full && e.text ? `<p>${h(e.text)}</p>` : ""}</div>
@@ -467,7 +468,9 @@
     $("#navQueue").textContent = count("Menunggu");
     renderDashboard();
     renderUmkm();
-    renderDetail();
+    if (currentView === "detail" && detailId != null) {
+      renderDetail();
+    }
     renderQueue();
     renderTplAdmin();
     renderStats();
@@ -511,13 +514,13 @@
       });
       if (res?.umkm) upsertUmkm(res.umkm);
       applyMutationLogs(res?.logs);
+      buttons.forEach((b) => { if (b) b.disabled = false; });
       render();
       toast(displayName(res?.umkm || u) + " disetujui tayang ✓");
     } catch (err) {
       toast(err.message || "Gagal menyetujui situs.");
     } finally {
       buttons.forEach((b) => { if (b) b.disabled = false; });
-      if (currentView === "detail") renderDetail();
     }
   }
 

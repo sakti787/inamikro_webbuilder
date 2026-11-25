@@ -394,6 +394,21 @@ class AdminApiTest extends TestCase
             'title' => 'Catatan diperbarui',
             'description' => 'Sudah dikonfirmasi lewat telepon.',
         ]);
+
+        $clearRes = $this->actingAs($admin)->patchJson("/api/admin/umkm/{$umkm->id}/note", [
+            'note' => '',
+        ]);
+
+        $clearRes->assertOk();
+        $clearRes->assertJsonPath('umkm.note', '');
+        $this->assertNull($site->fresh()?->admin_note);
+        $this->assertDatabaseHas('admin_logs', [
+            'actor_id' => $admin->id,
+            'title' => 'Catatan diperbarui',
+            'description' => 'Catatan dikosongkan.',
+            'who' => 'Tenun Loka',
+            'kind' => 'note',
+        ]);
     }
 
     public function test_admin_can_toggle_template_status_and_logs_activity(): void
@@ -574,6 +589,14 @@ class AdminApiTest extends TestCase
         $invalidLetters->assertUnprocessable();
         $invalidLetters->assertJsonValidationErrors(['admin_whatsapp']);
 
+        $invalidMixed = $this->actingAs($admin)->patchJson('/api/admin/settings/contact', [
+            'admin_name' => 'Kak Rina',
+            'admin_whatsapp' => '081234567890abc',
+        ]);
+        $invalidMixed->assertUnprocessable();
+        $invalidMixed->assertJsonValidationErrors(['admin_whatsapp']);
+        $this->assertSame('6281234567890', AppSetting::getValue('admin_whatsapp'));
+
         $emptyRes = $this->actingAs($admin)->patchJson('/api/admin/settings/contact', [
             'admin_name' => '',
             'admin_whatsapp' => '',
@@ -620,5 +643,64 @@ class AdminApiTest extends TestCase
         $page3->assertJsonPath('page', 3);
         $page3->assertJsonPath('items.0.title', 'Log #3');
         $page3->assertJsonPath('items.2.title', 'Log #1');
+    }
+
+    public function test_admin_moderation_logs_truncate_long_umkm_names_to_150_characters(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $longName = 'Usaha '.str_repeat('X', 194);
+        $expectedWho = mb_substr($longName, 0, 150);
+
+        $umkm = User::factory()->create([
+            'role' => 'umkm',
+            'business_name' => $longName,
+            'slug' => 'usaha-panjang-1',
+        ]);
+        $site = Site::factory()->for($umkm)->create([
+            'template_id' => 'warung',
+            'slug' => $umkm->slug,
+            'status' => 'pending',
+            'content' => $this->completeContent(['nama' => $longName]),
+            'rendered_html' => '<!doctype html><html><body><h1>Usaha Panjang</h1></body></html>',
+        ]);
+
+        $this->actingAs($admin)
+            ->patchJson("/api/admin/umkm/{$umkm->id}/note", ['note' => 'Cek nama panjang'])
+            ->assertOk();
+
+        $this->actingAs($admin)
+            ->postJson("/api/admin/umkm/{$umkm->id}/revise", ['reason' => 'Mohon periksa'])
+            ->assertOk();
+
+        $site->update(['status' => 'pending']);
+
+        $this->actingAs($admin)
+            ->postJson("/api/admin/umkm/{$umkm->id}/approve")
+            ->assertOk();
+
+        $autoUmkm = User::factory()->create([
+            'role' => 'umkm',
+            'business_name' => $longName,
+            'slug' => 'usaha-panjang-2',
+        ]);
+        Site::factory()->for($autoUmkm)->create([
+            'template_id' => 'warung',
+            'slug' => $autoUmkm->slug,
+            'status' => 'pending',
+            'content' => $this->completeContent(['nama' => $longName]),
+            'rendered_html' => '<!doctype html><html><body><h1>Auto Panjang</h1></body></html>',
+        ]);
+
+        $this->actingAs($admin)
+            ->patchJson('/api/admin/settings/auto-approve', ['auto_approve' => true])
+            ->assertOk();
+
+        $logs = AdminLog::query()->whereIn('kind', ['note', 'revise', 'approve', 'auto'])->get();
+        $this->assertCount(4, $logs);
+
+        foreach ($logs as $log) {
+            $this->assertLessThanOrEqual(150, mb_strlen($log->who));
+            $this->assertSame($expectedWho, $log->who);
+        }
     }
 }
