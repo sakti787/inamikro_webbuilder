@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\MediaApiController;
 use App\Http\Controllers\Api\SiteApiController;
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\PublicSiteController;
 use App\Http\Controllers\StudioController;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
@@ -35,3 +36,7 @@ Route::prefix('api')->middleware('auth')->group(function (): void {
     Route::post('/media', [MediaApiController::class, 'store'])->name('api.media.store');
     Route::delete('/media', [MediaApiController::class, 'destroy'])->name('api.media.destroy');
 });
+
+Route::get('/{slug}', PublicSiteController::class)
+    ->where('slug', '[a-z0-9-]+')
+    ->name('public.site');
