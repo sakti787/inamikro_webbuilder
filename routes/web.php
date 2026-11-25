@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\MediaApiController;
 use App\Http\Controllers\Api\SiteApiController;
 use App\Http\Controllers\Auth\AuthController;
 use Illuminate\Http\RedirectResponse;
@@ -33,4 +34,6 @@ Route::prefix('api')->middleware('auth')->group(function (): void {
     Route::put('/site', [SiteApiController::class, 'upsert'])->name('api.site.upsert');
     Route::post('/site/publish', [SiteApiController::class, 'publish'])->name('api.site.publish');
     Route::delete('/site', [SiteApiController::class, 'destroy'])->name('api.site.destroy');
+    Route::post('/media', [MediaApiController::class, 'store'])->name('api.media.store');
+    Route::delete('/media', [MediaApiController::class, 'destroy'])->name('api.media.destroy');
 });
