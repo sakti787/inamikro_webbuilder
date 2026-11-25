@@ -10,6 +10,7 @@
 /.idea
 /.nova
 /.phpunit.cache
+/.superpowers/
 /.vscode
 /.zed
 /auth.json
@@ -25,10 +26,3 @@ _ide_helper.php
 Homestead.json
 Homestead.yaml
 Thumbs.db
-/.fleet
-/.superpowers
-
-# FigCraft & Local binaries
-figcraft-0.5.1-windows-x64-portable/
-*.figcraft
-start_figcraft.bat
