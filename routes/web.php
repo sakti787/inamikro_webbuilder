@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AdminController;
 use App\Http\Controllers\Api\AdminApiController;
 use App\Http\Controllers\Api\MediaApiController;
 use App\Http\Controllers\Api\SiteApiController;
@@ -39,7 +40,7 @@ Route::middleware('auth')->group(function (): void {
         ->name('studio');
 });
 
-Route::get('/admin', fn () => response('Panel Pendamping Admin', 200))
+Route::get('/admin', AdminController::class)
     ->middleware(['auth', 'role:admin'])
     ->name('admin');
 
