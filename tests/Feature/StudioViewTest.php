@@ -36,9 +36,9 @@ class StudioViewTest extends TestCase
         $response->assertSee('businessName', false);
         $response->assertSee('siteSlug', false);
         $response->assertSee('csrfToken', false);
-        $response->assertSee('studio/style.css', false);
-        $response->assertSee('studio/templates.js', false);
-        $response->assertSee('studio/app.js', false);
+        $response->assertSee('studio-assets/style.css', false);
+        $response->assertSee('studio-assets/templates.js', false);
+        $response->assertSee('studio-assets/app.js', false);
         $response->assertSee('action="'.route('logout').'"', false);
         $response->assertSee('name="_token"', false);
         $response->assertSee('Keluar');
@@ -123,9 +123,11 @@ class StudioViewTest extends TestCase
 
     public function test_studio_static_assets_exist_in_public_studio(): void
     {
-        $stylePath = public_path('studio/style.css');
-        $templatesPath = public_path('studio/templates.js');
-        $appPath = public_path('studio/app.js');
+        $this->assertDirectoryDoesNotExist(public_path('studio'));
+
+        $stylePath = public_path('studio-assets/style.css');
+        $templatesPath = public_path('studio-assets/templates.js');
+        $appPath = public_path('studio-assets/app.js');
 
         $this->assertFileExists($stylePath);
         $this->assertFileExists($templatesPath);
@@ -147,13 +149,13 @@ class StudioViewTest extends TestCase
 
     public function test_templates_js_client_js_hash_matches_server_sanitizer_hash(): void
     {
-        $templatesPath = public_path('studio/templates.js');
+        $templatesPath = public_path('studio-assets/templates.js');
         $this->assertFileExists($templatesPath);
 
         $contents = (string) file_get_contents($templatesPath);
         $marker = 'const CLIENT_JS = `';
         $start = strpos($contents, $marker);
-        $this->assertNotFalse($start, 'Marker const CLIENT_JS = ` tidak ditemukan di public/studio/templates.js.');
+        $this->assertNotFalse($start, 'Marker const CLIENT_JS = ` tidak ditemukan di public/studio-assets/templates.js.');
 
         $scriptStart = $start + strlen($marker);
         $end = strpos($contents, '`;', $scriptStart);

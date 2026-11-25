@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="{{ asset('studio/style.css') }}" />
+  <link rel="stylesheet" href="{{ asset('studio-assets/style.css') }}" />
 </head>
 <body>
 
@@ -233,7 +233,7 @@
 <script>
   window.INAWEB_CONFIG = @json($studioConfig);
 </script>
-<script src="{{ asset('studio/templates.js') }}"></script>
-<script src="{{ asset('studio/app.js') }}"></script>
+<script src="{{ asset('studio-assets/templates.js') }}"></script>
+<script src="{{ asset('studio-assets/app.js') }}"></script>
 </body>
 </html>

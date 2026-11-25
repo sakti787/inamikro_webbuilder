@@ -8,7 +8,7 @@ use Dom\HTMLDocument;
 class SiteHtmlSanitizer
 {
     /**
-     * Canonical client script matching public/studio/templates.js byte-for-byte.
+     * Canonical client script matching public/studio-assets/templates.js byte-for-byte.
      */
     public const string CLIENT_JS = <<<'JS'
 
