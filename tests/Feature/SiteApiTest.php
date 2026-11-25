@@ -176,6 +176,62 @@ class SiteApiTest extends TestCase
         $this->assertDatabaseCount('sites', 0);
     }
 
+    public function test_validation_failures_on_secondary_content_fields_return_indonesian_messages(): void
+    {
+        $user = User::factory()->create(['slug' => 'validasi-sekunder']);
+
+        $invalidPayload = $this->validSitePayload([
+            'template_id' => 'template-liar',
+            'brand_color' => 'merah',
+            'content' => [
+                'template' => str_repeat('t', 51),
+                'variant' => 'bukan-boolean',
+                'brand' => str_repeat('b', 21),
+                'tagline' => str_repeat('a', 501),
+                'kategori' => str_repeat('k', 121),
+                'deskripsi' => str_repeat('d', 5001),
+                'heroName' => str_repeat('h', 256),
+                'heroSize' => str_repeat('s', 51),
+                'ig' => str_repeat('i', 101),
+                'alamat' => str_repeat('j', 501),
+                'updatedAt' => 'bukan-angka',
+                'produk' => [
+                    [
+                        'nama' => 'Produk Valid',
+                        'harga' => ['array-tidak-valid'],
+                        'ket' => str_repeat('p', 501),
+                        'imgName' => str_repeat('n', 256),
+                        'imgSize' => str_repeat('z', 51),
+                    ],
+                ],
+            ],
+        ]);
+
+        $response = $this->actingAs($user)->putJson('/api/site', $invalidPayload);
+
+        $response->assertUnprocessable();
+        $errors = $response->json('errors');
+
+        $this->assertSame('Template yang dipilih tidak valid.', $errors['template_id'][0]);
+        $this->assertSame('Format warna brand harus berupa kode hex 6 digit (contoh: #dc2626).', $errors['brand_color'][0]);
+        $this->assertSame('ID template konten maksimal 50 karakter.', $errors['content.template'][0]);
+        $this->assertSame('Status varian template harus berupa nilai benar atau salah.', $errors['content.variant'][0]);
+        $this->assertSame('Warna brand konten maksimal 20 karakter.', $errors['content.brand'][0]);
+        $this->assertSame('Tagline maksimal 500 karakter.', $errors['content.tagline'][0]);
+        $this->assertSame('Kategori usaha maksimal 120 karakter.', $errors['content.kategori'][0]);
+        $this->assertSame('Deskripsi usaha maksimal 5000 karakter.', $errors['content.deskripsi'][0]);
+        $this->assertSame('Nama file foto utama maksimal 255 karakter.', $errors['content.heroName'][0]);
+        $this->assertSame('Ukuran foto utama maksimal 50 karakter.', $errors['content.heroSize'][0]);
+        $this->assertSame('Akun Instagram maksimal 100 karakter.', $errors['content.ig'][0]);
+        $this->assertSame('Alamat usaha maksimal 500 karakter.', $errors['content.alamat'][0]);
+        $this->assertSame('Waktu pembaruan konten harus berupa angka.', $errors['content.updatedAt'][0]);
+        $this->assertSame('Harga produk harus berupa teks.', $errors['content.produk.0.harga'][0]);
+        $this->assertSame('Keterangan produk maksimal 500 karakter.', $errors['content.produk.0.ket'][0]);
+        $this->assertSame('Nama file foto produk maksimal 255 karakter.', $errors['content.produk.0.imgName'][0]);
+        $this->assertSame('Ukuran foto produk maksimal 50 karakter.', $errors['content.produk.0.imgSize'][0]);
+        $this->assertDatabaseCount('sites', 0);
+    }
+
     public function test_publish_requires_all_four_checklist_items(): void
     {
         $user = User::factory()->create(['slug' => 'usaha-cek']);
@@ -249,7 +305,7 @@ class SiteApiTest extends TestCase
 <iframe src="https://evil.example/frame"></iframe>
 <object data="https://evil.example/obj"></object>
 <embed src="https://evil.example/emb">
-<svg><script>alert(2)</script></svg>
+<svg><script>alert(2)</script><animate onbegin="alert(3)" attributeName="href" to="javascript:alert(3)"></animate><set attributeName="onmouseover" to="alert(4)"></set><animateMotion></animateMotion><animateTransform></animateTransform><foreignObject><p>foreign</p></foreignObject></svg>
 <script>console.log("liar")</script>
 </body>
 </html>
@@ -278,16 +334,22 @@ HTML;
         $this->assertNotNull($sanitized);
         $this->assertStringNotContainsString('alert(1)', $sanitized);
         $this->assertStringNotContainsString('alert(2)', $sanitized);
+        $this->assertStringNotContainsString('alert(3)', $sanitized);
+        $this->assertStringNotContainsString('alert(4)', $sanitized);
         $this->assertStringNotContainsString('alert(9)', $sanitized);
         $this->assertStringNotContainsString('stealCookie', $sanitized);
         $this->assertStringNotContainsString('console.log("liar")', $sanitized);
         $this->assertStringNotContainsString('onclick', $sanitized);
         $this->assertStringNotContainsString('onerror', $sanitized);
+        $this->assertStringNotContainsString('onbegin', $sanitized);
         $this->assertStringNotContainsString('javascript:', $sanitized);
         $this->assertStringNotContainsString('vbscript:', $sanitized);
         $this->assertStringNotContainsString('<iframe', $sanitized);
         $this->assertStringNotContainsString('<object', $sanitized);
         $this->assertStringNotContainsString('<embed', $sanitized);
+        $this->assertStringNotContainsString('<animate', $sanitized);
+        $this->assertStringNotContainsString('<set', $sanitized);
+        $this->assertStringNotContainsString('<foreignObject', $sanitized);
 
         $this->assertStringContainsString('Dapur Bu Sari — Masakan Rumahan', $sanitized);
         $this->assertStringContainsString('Menu Pilihan 📍', $sanitized);

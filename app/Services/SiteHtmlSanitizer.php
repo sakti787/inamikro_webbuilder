@@ -122,6 +122,11 @@ JS;
         'applet',
         'frame',
         'frameset',
+        'animate',
+        'set',
+        'animateMotion',
+        'animateTransform',
+        'foreignObject',
     ];
 
     /**
