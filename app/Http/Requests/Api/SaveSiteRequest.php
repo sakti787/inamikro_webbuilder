@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Api;
 
+use App\Models\TemplateSetting;
 use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -185,7 +186,26 @@ class SaveSiteRequest extends FormRequest
         );
 
         return [
-            'template_id' => ['required', 'string', Rule::in(self::ALLOWED_TEMPLATES)],
+            'template_id' => [
+                'required',
+                'string',
+                Rule::in(self::ALLOWED_TEMPLATES),
+                function (string $attribute, mixed $value, Closure $fail): void {
+                    if (! is_string($value) || ! in_array($value, self::ALLOWED_TEMPLATES, true)) {
+                        return;
+                    }
+
+                    $existingTemplateId = $this->user()?->site()->value('template_id');
+
+                    if ($existingTemplateId !== null && $existingTemplateId === $value) {
+                        return;
+                    }
+
+                    if (! in_array($value, TemplateSetting::activeTemplateIds(), true)) {
+                        $fail('Template yang dipilih sedang dinonaktifkan oleh admin.');
+                    }
+                },
+            ],
             'brand_color' => ['nullable', 'string', 'regex:/^#[0-9a-fA-F]{6}$/'],
             'content' => ['required', 'array'],
             'content.template' => ['nullable', 'string', 'max:50'],

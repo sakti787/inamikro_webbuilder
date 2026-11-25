@@ -2,7 +2,11 @@
 
 namespace Tests\Feature;
 
+use App\Models\AdminLog;
+use App\Models\AppSetting;
 use App\Models\Site;
+use App\Models\SiteHistory;
+use App\Models\TemplateSetting;
 use App\Models\User;
 use App\Services\SiteHtmlSanitizer;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -282,6 +286,8 @@ class SiteApiTest extends TestCase
 
     public function test_umkm_can_publish_site_and_sanitizer_strips_xss_scripts_and_inline_handlers(): void
     {
+        AppSetting::setValue('auto_approve', '1');
+
         $user = User::factory()->create([
             'business_name' => 'Dapur Bu Sari',
             'slug' => 'dapur-bu-sari',
@@ -441,5 +447,275 @@ HTML;
         $this->assertModelExists($otherSite);
         $this->assertFalse(Storage::disk('public')->exists("sites/{$user->id}"));
         $this->assertTrue(Storage::disk('public')->exists("sites/{$otherUser->id}/hero.jpg"));
+    }
+
+    public function test_publish_creates_pending_site_when_auto_approve_is_disabled_and_stays_404_publicly(): void
+    {
+        AppSetting::setValue('auto_approve', '0');
+
+        $user = User::factory()->create([
+            'business_name' => 'Warung Menunggu',
+            'slug' => 'warung-menunggu',
+        ]);
+        $existingSite = Site::factory()->for($user)->create([
+            'template_id' => 'warung',
+            'slug' => $user->slug,
+            'status' => 'draft',
+            'revision_note' => 'Tolong perjelas jam buka toko.',
+        ]);
+        $payload = $this->validSitePayload([
+            'content' => [
+                'nama' => 'Warung Menunggu',
+            ],
+            'rendered_html' => '<!doctype html><html><body><h1>Warung Menunggu</h1><script>alert(1)</script></body></html>',
+        ]);
+
+        $response = $this->actingAs($user)->postJson('/api/site/publish', $payload);
+
+        $response->assertOk();
+        $response->assertJsonPath('site.status', 'pending');
+        $response->assertJsonPath('site.revision_note', null);
+
+        $freshSite = $existingSite->fresh();
+        $this->assertNotNull($freshSite);
+        $this->assertSame('pending', $freshSite->status);
+        $this->assertNull($freshSite->published_at);
+        $this->assertNull($freshSite->revision_note);
+        $this->assertStringContainsString('Warung Menunggu', (string) $freshSite->rendered_html);
+        $this->assertStringNotContainsString('alert(1)', (string) $freshSite->rendered_html);
+
+        $this->assertDatabaseHas('site_histories', [
+            'site_id' => $freshSite->id,
+            'actor_id' => $user->id,
+            'title' => 'Diminta publikasi',
+            'description' => 'UMKM menekan tombol Publikasikan.',
+        ]);
+        $this->assertDatabaseHas('admin_logs', [
+            'actor_id' => $user->id,
+            'title' => 'Pengajuan publikasi baru',
+            'who' => 'Warung Menunggu',
+            'kind' => 'general',
+        ]);
+
+        $this->get('/warung-menunggu')->assertNotFound();
+    }
+
+    public function test_publish_immediately_publishes_when_auto_approve_is_enabled(): void
+    {
+        AppSetting::setValue('auto_approve', '1');
+
+        $user = User::factory()->create([
+            'business_name' => 'Warung Otomatis',
+            'slug' => 'warung-otomatis',
+        ]);
+        $existingSite = Site::factory()->for($user)->create([
+            'template_id' => 'warung',
+            'slug' => $user->slug,
+            'status' => 'draft',
+            'revision_note' => 'Catatan revisi sebelumnya.',
+        ]);
+        $payload = $this->validSitePayload([
+            'content' => [
+                'nama' => 'Warung Otomatis',
+            ],
+            'rendered_html' => '<!doctype html><html><body><h1>Warung Otomatis</h1></body></html>',
+        ]);
+
+        $response = $this->actingAs($user)->postJson('/api/site/publish', $payload);
+
+        $response->assertOk();
+        $response->assertJsonPath('site.status', 'published');
+        $response->assertJsonPath('site.revision_note', null);
+
+        $freshSite = $existingSite->fresh();
+        $this->assertNotNull($freshSite);
+        $this->assertSame('published', $freshSite->status);
+        $this->assertNotNull($freshSite->published_at);
+        $this->assertNull($freshSite->revision_note);
+
+        $this->assertDatabaseHas('site_histories', [
+            'site_id' => $freshSite->id,
+            'actor_id' => $user->id,
+            'title' => 'Disetujui otomatis',
+            'description' => 'Auto setujui aktif: 4 dari 4 syarat terpenuhi.',
+        ]);
+        $this->assertDatabaseHas('admin_logs', [
+            'actor_id' => $user->id,
+            'title' => 'Disetujui otomatis',
+            'who' => 'Warung Otomatis',
+            'kind' => 'auto',
+        ]);
+
+        $this->get('/warung-otomatis')
+            ->assertOk()
+            ->assertSee('Warung Otomatis');
+    }
+
+    public function test_republishing_already_published_site_keeps_it_published_even_when_auto_approve_is_disabled(): void
+    {
+        AppSetting::setValue('auto_approve', '0');
+
+        $originalPublishedAt = now()->subDays(2)->startOfSecond();
+        $user = User::factory()->create([
+            'business_name' => 'Warung Sudah Tayang',
+            'slug' => 'warung-sudah-tayang',
+        ]);
+        $site = Site::factory()->for($user)->published()->create([
+            'template_id' => 'warung',
+            'slug' => $user->slug,
+            'published_at' => $originalPublishedAt,
+            'revision_note' => 'Catatan lama yang harus bersih.',
+            'rendered_html' => '<!doctype html><html><body><h1>Versi Lama</h1></body></html>',
+        ]);
+
+        $payload = $this->validSitePayload([
+            'content' => [
+                'nama' => 'Warung Sudah Tayang Baru',
+            ],
+            'rendered_html' => '<!doctype html><html><body><h1>Versi Baru Tayang</h1><script>alert(1)</script></body></html>',
+        ]);
+
+        $response = $this->actingAs($user)->postJson('/api/site/publish', $payload);
+
+        $response->assertOk();
+        $response->assertJsonPath('site.status', 'published');
+        $response->assertJsonPath('site.revision_note', null);
+
+        $freshSite = $site->fresh();
+        $this->assertNotNull($freshSite);
+        $this->assertSame('published', $freshSite->status);
+        $this->assertNull($freshSite->revision_note);
+        $this->assertTrue($freshSite->published_at?->equalTo($originalPublishedAt));
+        $this->assertStringContainsString('Versi Baru Tayang', (string) $freshSite->rendered_html);
+        $this->assertStringNotContainsString('alert(1)', (string) $freshSite->rendered_html);
+        $this->assertSame(0, SiteHistory::count());
+        $this->assertSame(0, AdminLog::count());
+
+        $this->get('/warung-sudah-tayang')
+            ->assertOk()
+            ->assertSee('Versi Baru Tayang');
+    }
+
+    public function test_editing_pending_site_updates_content_in_place_and_keeps_status_pending(): void
+    {
+        $user = User::factory()->create([
+            'business_name' => 'Toko Antrean',
+            'slug' => 'toko-antrean',
+        ]);
+        $site = Site::factory()->for($user)->create([
+            'template_id' => 'toko',
+            'slug' => $user->slug,
+            'status' => 'pending',
+            'brand_color' => '#0d9488',
+            'content' => $this->validSitePayload(['template_id' => 'toko', 'content' => ['nama' => 'Toko Antrean Lama']])['content'],
+            'rendered_html' => '<!doctype html><html><body><h1>Toko Antrean Lama</h1></body></html>',
+            'revision_note' => 'Catatan revisi sebelumnya',
+        ]);
+
+        $showResponse = $this->actingAs($user)->getJson('/api/site');
+        $showResponse->assertOk();
+        $showResponse->assertJsonPath('site.revision_note', 'Catatan revisi sebelumnya');
+
+        $updatePayload = $this->validSitePayload([
+            'template_id' => 'toko',
+            'brand_color' => '#2563eb',
+            'content' => [
+                'nama' => 'Toko Antrean Diperbarui',
+                'wa' => '',
+            ],
+            'rendered_html' => '<!doctype html><html><body><h1>Toko Antrean Diperbarui</h1><script>alert(9)</script></body></html>',
+        ]);
+
+        $upsertResponse = $this->actingAs($user)->putJson('/api/site', $updatePayload);
+
+        $upsertResponse->assertOk();
+        $upsertResponse->assertJsonPath('site.status', 'pending');
+        $upsertResponse->assertJsonPath('site.brand_color', '#2563eb');
+        $upsertResponse->assertJsonPath('site.content.nama', 'Toko Antrean Diperbarui');
+        $upsertResponse->assertJsonPath('site.revision_note', 'Catatan revisi sebelumnya');
+
+        $freshSite = $site->fresh();
+        $this->assertNotNull($freshSite);
+        $this->assertSame('pending', $freshSite->status);
+        $this->assertSame('#2563eb', $freshSite->brand_color);
+        $this->assertSame('Toko Antrean Diperbarui', $freshSite->content['nama']);
+        $this->assertStringContainsString('Toko Antrean Diperbarui', (string) $freshSite->rendered_html);
+        $this->assertStringNotContainsString('alert(9)', (string) $freshSite->rendered_html);
+
+        $this->get('/toko-antrean')->assertNotFound();
+    }
+
+    public function test_disabled_template_blocks_new_selection_but_allows_existing_site_edits(): void
+    {
+        AppSetting::setValue('auto_approve', '0');
+
+        TemplateSetting::create([
+            'template_id' => 'toko-2',
+            'is_active' => false,
+        ]);
+        TemplateSetting::create([
+            'template_id' => 'warung-2',
+            'is_active' => false,
+        ]);
+
+        $newUser = User::factory()->create(['slug' => 'umkm-baru']);
+        $existingUser = User::factory()->create(['slug' => 'umkm-lama']);
+        $existingSite = Site::factory()->for($existingUser)->create([
+            'template_id' => 'toko-2',
+            'slug' => $existingUser->slug,
+            'status' => 'draft',
+        ]);
+
+        $blockedDraftResponse = $this->actingAs($newUser)->putJson('/api/site', $this->validSitePayload([
+            'template_id' => 'toko-2',
+        ]));
+        $blockedDraftResponse->assertUnprocessable();
+        $blockedDraftResponse->assertJsonValidationErrors(['template_id']);
+        $this->assertSame(
+            'Template yang dipilih sedang dinonaktifkan oleh admin.',
+            $blockedDraftResponse->json('errors.template_id.0'),
+        );
+        $this->assertNull($newUser->fresh()->site);
+
+        $blockedPublishResponse = $this->actingAs($newUser)->postJson('/api/site/publish', $this->validSitePayload([
+            'template_id' => 'toko-2',
+        ]));
+        $blockedPublishResponse->assertUnprocessable();
+        $blockedPublishResponse->assertJsonValidationErrors(['template_id']);
+        $this->assertSame(
+            'Template yang dipilih sedang dinonaktifkan oleh admin.',
+            $blockedPublishResponse->json('errors.template_id.0'),
+        );
+
+        $allowedDraftResponse = $this->actingAs($existingUser)->putJson('/api/site', $this->validSitePayload([
+            'template_id' => 'toko-2',
+            'content' => [
+                'nama' => 'Toko Lama Tetap Bisa Edit',
+            ],
+        ]));
+        $allowedDraftResponse->assertOk();
+        $allowedDraftResponse->assertJsonPath('site.template_id', 'toko-2');
+        $allowedDraftResponse->assertJsonPath('site.content.nama', 'Toko Lama Tetap Bisa Edit');
+
+        $allowedPublishResponse = $this->actingAs($existingUser)->postJson('/api/site/publish', $this->validSitePayload([
+            'template_id' => 'toko-2',
+            'content' => [
+                'nama' => 'Toko Lama Tetap Bisa Publish',
+            ],
+        ]));
+        $allowedPublishResponse->assertOk();
+        $allowedPublishResponse->assertJsonPath('site.template_id', 'toko-2');
+        $allowedPublishResponse->assertJsonPath('site.status', 'pending');
+
+        $switchBlockedResponse = $this->actingAs($existingUser)->putJson('/api/site', $this->validSitePayload([
+            'template_id' => 'warung-2',
+        ]));
+        $switchBlockedResponse->assertUnprocessable();
+        $switchBlockedResponse->assertJsonValidationErrors(['template_id']);
+        $this->assertSame(
+            'Template yang dipilih sedang dinonaktifkan oleh admin.',
+            $switchBlockedResponse->json('errors.template_id.0'),
+        );
+        $this->assertSame('toko-2', $existingSite->fresh()?->template_id);
     }
 }

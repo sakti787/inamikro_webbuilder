@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AppSetting;
 use App\Models\Site;
+use App\Models\TemplateSetting;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -25,6 +27,9 @@ class StudioController extends Controller
             'siteSlug' => $user->slug,
             'publicBaseUrl' => $publicBaseUrl,
             'publicSiteUrl' => $publicSiteUrl,
+            'activeTemplates' => TemplateSetting::activeTemplateIds(),
+            'adminContact' => AppSetting::adminContact(),
+            'autoApprove' => AppSetting::autoApproveEnabled(),
             'initialSite' => $site ? [
                 'id' => $site->id,
                 'template_id' => $site->template_id,
@@ -32,6 +37,7 @@ class StudioController extends Controller
                 'status' => $site->status,
                 'brand_color' => $site->brand_color,
                 'content' => $site->content,
+                'revision_note' => $site->revision_note,
                 'published_at' => $site->published_at?->toIso8601String(),
                 'updated_at' => $site->updated_at?->toIso8601String(),
             ] : null,

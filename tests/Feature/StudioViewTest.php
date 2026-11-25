@@ -2,7 +2,10 @@
 
 namespace Tests\Feature;
 
+use App\Http\Requests\Api\SaveSiteRequest;
+use App\Models\AppSetting;
 use App\Models\Site;
+use App\Models\TemplateSetting;
 use App\Models\User;
 use App\Services\SiteHtmlSanitizer;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -66,6 +69,13 @@ class StudioViewTest extends TestCase
         $this->assertSame('warung-mbak-sari', $config['siteSlug']);
         $this->assertSame(url('/warung-mbak-sari'), $config['publicSiteUrl']);
         $this->assertSame(rtrim(url('/'), '/'), $config['publicBaseUrl']);
+        $this->assertSame(SaveSiteRequest::ALLOWED_TEMPLATES, $config['activeTemplates']);
+        $this->assertSame([
+            'name' => 'Tim INAmikro',
+            'whatsapp' => '',
+            'waUrl' => null,
+        ], $config['adminContact']);
+        $this->assertFalse($config['autoApprove']);
         $this->assertNull($config['initialSite']);
         $this->assertNotEmpty($config['csrfToken']);
         $this->assertSame(route('api.site.upsert'), $config['routes']['siteSave']);
@@ -153,6 +163,10 @@ class StudioViewTest extends TestCase
         $this->assertStringContainsString('og:image', $templatesJs);
         $this->assertStringContainsString('publicSiteUrl', $templatesJs);
         $this->assertStringContainsString('INAWEB_CONFIG', $appJs);
+        $this->assertStringContainsString('activeTemplates', $appJs);
+        $this->assertStringContainsString('Pengajuan publikasi terkirim. Menunggu persetujuan admin.', $appJs);
+        $this->assertStringContainsString('Nomor WhatsApp pendamping belum diatur.', $appJs);
+        $this->assertStringContainsString('Fitur segera hadir.', $appJs);
         $this->assertStringNotContainsString('localStorage', $appJs);
     }
 
@@ -175,5 +189,60 @@ class StudioViewTest extends TestCase
 
         $this->assertSame(SiteHtmlSanitizer::cspScriptHash(), $clientHash);
         $this->assertSame(SiteHtmlSanitizer::CLIENT_JS, $clientJs);
+    }
+
+    public function test_studio_injects_active_templates_admin_contact_and_revision_note(): void
+    {
+        TemplateSetting::create([
+            'template_id' => 'toko-2',
+            'is_active' => false,
+        ]);
+        TemplateSetting::create([
+            'template_id' => 'jasa-2',
+            'is_active' => false,
+        ]);
+        AppSetting::setValue('auto_approve', '1');
+        AppSetting::setValue('admin_name', 'Kak Rina');
+        AppSetting::setValue('admin_whatsapp', '6281234567890');
+
+        $user = User::factory()->create([
+            'business_name' => 'Dapur Bu Sari',
+            'slug' => 'dapur-bu-sari',
+            'role' => 'umkm',
+        ]);
+        Site::factory()->for($user)->create([
+            'template_id' => 'warung',
+            'slug' => $user->slug,
+            'status' => 'draft',
+            'revision_note' => 'Mohon lengkapi jam buka setiap hari.',
+            'admin_note' => 'Catatan internal khusus admin.',
+        ]);
+
+        $response = $this->actingAs($user)->get(route('studio'));
+
+        $response->assertOk();
+        $response->assertSee('id="revisionNotice"', false);
+        $response->assertDontSee('Catatan internal khusus admin.');
+
+        $html = (string) $response->getContent();
+        $this->assertMatchesRegularExpression('/window\.INAWEB_CONFIG\s*=\s*(\{.*?\});/s', $html);
+
+        preg_match('/window\.INAWEB_CONFIG\s*=\s*(\{.*?\});/s', $html, $matches);
+        $config = json_decode($matches[1], true);
+
+        $this->assertIsArray($config);
+        $this->assertSame(
+            ['warung', 'warung-2', 'butik', 'butik-2', 'jasa', 'toko'],
+            $config['activeTemplates'],
+        );
+        $this->assertSame('Kak Rina', $config['adminContact']['name']);
+        $this->assertSame('6281234567890', $config['adminContact']['whatsapp']);
+        $this->assertSame(
+            'https://wa.me/6281234567890?text=Halo%20kak%2C%20butuh%20bantuan%20INAmikro.',
+            $config['adminContact']['waUrl'],
+        );
+        $this->assertTrue($config['autoApprove']);
+        $this->assertSame('Mohon lengkapi jam buka setiap hari.', $config['initialSite']['revision_note']);
+        $this->assertArrayNotHasKey('admin_note', $config['initialSite']);
     }
 }

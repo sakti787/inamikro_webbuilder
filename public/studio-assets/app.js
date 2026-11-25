@@ -68,13 +68,20 @@ function normalizeSite(raw) {
   if (!raw || typeof raw !== "object") return null;
   const tpl = TEMPLATES.find((x) => x.id === raw.template_id) || TEMPLATES[0];
   const content = normalizeContent({ ...(raw.content || {}), brand: raw.brand_color || raw.content?.brand }, tpl);
+  const status = raw.status === "published" || raw.status === "pending" ? raw.status : "draft";
+  const revisionNote =
+    raw.revision_note !== undefined && raw.revision_note !== null
+      ? String(raw.revision_note).trim()
+      : "";
+
   return {
     id: raw.id ?? null,
     template_id: tpl.id,
     slug: String(raw.slug || CFG.siteSlug || ""),
-    status: raw.status === "published" ? "published" : "draft",
+    status,
     brand_color: normalizeHex(raw.brand_color || content.brand, "#dc2626"),
     content,
+    revision_note: revisionNote || null,
     published_at: raw.published_at || null,
     updated_at: raw.updated_at || null,
   };
@@ -350,25 +357,45 @@ function undo() {
 }
 
 /* ---------------- galeri ---------------- */
+function activeTemplatesList() {
+  if (!Array.isArray(CFG.activeTemplates)) return TEMPLATES;
+  const allowed = new Set(CFG.activeTemplates.map(String));
+  return TEMPLATES.filter((t) => allowed.has(t.id));
+}
+
 function renderGallery() {
   const grid = $("#templateGrid");
-  grid.innerHTML = TEMPLATES.map((t) => {
-    const html = t.render(defaultsFor(t));
-    return `<article class="card" data-id="${t.id}" data-cat="${t.cat}">
-      <div class="thumb">
-        ${t.badge ? `<span class="thumb-badge ${t.badge === "Populer" ? "hot" : ""}">${t.badge}</span>` : ""}
-        <iframe title="Pratinjau ${esc(t.name)}" tabindex="-1" srcdoc="${esc(html)}"></iframe>
-      </div>
-      <div class="card-body">
-        <h3>${t.name}</h3>
-        <p>${t.blurb}</p>
-        <div class="card-meta">
-          <span class="tag">${t.tag1}</span><span class="tag">${t.tag2}</span>
-          <button class="btn btn-primary btn-sm card-use" data-open="${t.id}">Pakai</button>
+  const list = activeTemplatesList();
+  const countEl = $("#templateCount") || $(".head-stat b", $("#view-gallery"));
+  if (countEl) countEl.textContent = String(list.length);
+
+  if (!list.length) {
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1 / -1">
+      <h3>Belum ada template aktif</h3>
+      <p>Tim pendamping sedang memperbarui daftar template. Silakan hubungi admin atau kelola situs yang sudah ada di menu Situs saya.</p>
+    </div>`;
+    return;
+  }
+
+  grid.innerHTML = list
+    .map((t) => {
+      const html = t.render(defaultsFor(t));
+      return `<article class="card" data-id="${t.id}" data-cat="${t.cat}">
+        <div class="thumb">
+          ${t.badge ? `<span class="thumb-badge ${t.badge === "Populer" ? "hot" : ""}">${t.badge}</span>` : ""}
+          <iframe title="Pratinjau ${esc(t.name)}" tabindex="-1" srcdoc="${esc(html)}"></iframe>
         </div>
-      </div>
-    </article>`;
-  }).join("");
+        <div class="card-body">
+          <h3>${t.name}</h3>
+          <p>${t.blurb}</p>
+          <div class="card-meta">
+            <span class="tag">${t.tag1}</span><span class="tag">${t.tag2}</span>
+            <button class="btn btn-primary btn-sm card-use" data-open="${t.id}">Pakai</button>
+          </div>
+        </div>
+      </article>`;
+    })
+    .join("");
 }
 
 /* ---------------- form ---------------- */
@@ -782,9 +809,12 @@ function persistDraft(seq) {
       if (seq === saveSeq) {
         if (res?.site) {
           currentSite = normalizeSite(res.site);
+          renderRevisionNotice();
         }
         if (el) {
-          el.textContent = "Tersimpan otomatis · " + new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
+          const jam = new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
+          el.textContent =
+            (currentSite?.status === "pending" ? "Tersimpan (Menunggu tinjauan admin) · " : "Tersimpan otomatis · ") + jam;
         }
       }
       return true;
@@ -858,8 +888,41 @@ async function publishSite(targetState, targetTpl) {
 
   if (seq === saveSeq && res?.site) {
     currentSite = normalizeSite(res.site);
+    renderRevisionNotice();
   }
   return res;
+}
+
+function renderRevisionNotice() {
+  const box = $("#revisionNotice");
+  if (!box) return;
+  const note = currentSite?.revision_note ? String(currentSite.revision_note).trim() : "";
+  if (!note) {
+    box.hidden = true;
+    box.innerHTML = "";
+    return;
+  }
+  box.hidden = false;
+  box.innerHTML = `<b>Perlu revisi dari admin:</b><span>${esc(note)}</span>`;
+}
+
+function openAdminSupport() {
+  const waUrl = CFG.adminContact?.waUrl ? String(CFG.adminContact.waUrl).trim() : "";
+  if (waUrl) {
+    window.open(waUrl, "_blank", "noopener");
+    return;
+  }
+  toast("Nomor WhatsApp pendamping belum diatur.");
+}
+
+function notifyPublishResult(res) {
+  const isPending = (res?.site?.status || currentSite?.status) === "pending";
+  toast(
+    isPending
+      ? "Pengajuan publikasi terkirim. Menunggu persetujuan admin."
+      : "Situs berhasil dipublikasikan ke " + (res?.public_url || CFG.publicSiteUrl || "")
+  );
+  return isPending;
 }
 
 /* ---------------- confirm popup ---------------- */
@@ -944,7 +1007,13 @@ async function openEditor(id, fromGallery = false) {
   history = [];
   await showView("editor");
   $("#edTemplateName").textContent = activeTpl.name;
-  $("#edStatus").textContent = existing?.status === "published" ? "Sudah terbit" : "Tersimpan otomatis";
+  $("#edStatus").textContent =
+    existing?.status === "published"
+      ? "Sudah terbit"
+      : existing?.status === "pending"
+        ? "Menunggu tinjauan admin"
+        : "Tersimpan otomatis";
+  renderRevisionNotice();
   buildForm(activeTpl);
   pushHistory();
   updatePreview(true);
@@ -1044,15 +1113,27 @@ function renderMySites() {
   const initial = (d.nama || CFG.businessName || "S").charAt(0).toUpperCase();
   const slug = slugOf(d.nama);
   const isPublished = site.status === "published";
+  const isPending = site.status === "pending";
+  const statusClass = isPublished ? "is-published" : isPending ? "is-pending" : "";
+  const statusLabel = isPublished ? "Terbit" : isPending ? "Menunggu" : "Draf";
+  const urlSubtext = isPublished
+    ? "Sudah tayang dan dapat diakses publik"
+    : isPending
+      ? "Menunggu tinjauan admin"
+      : "Belum dipublikasikan";
+  const revisionBanner = site.revision_note
+    ? `<div class="revision-notice revision-notice-card"><b>Perlu revisi dari admin:</b><span>${esc(site.revision_note)}</span></div>`
+    : "";
   const publicUrl = CFG.publicSiteUrl || ((CFG.publicBaseUrl || window.location.origin || "https://inamikro.co.id").replace(/\/$/, "") + "/" + slug);
   const baseDisplay = String(CFG.publicBaseUrl || window.location.origin || "https://inamikro.co.id").replace(/^https?:\/\//, "").replace(/\/$/, "");
 
   $("#siteList").innerHTML = `<article class="site-card" data-id="${esc(t.id)}">
     <div class="site-thumb" style="background:linear-gradient(145deg,${esc(site.brand_color || t.brand || "#dc2626")},#0f172a)"><span>${esc(initial)}</span></div>
     <div class="site-info">
-      <div class="site-title"><b>${esc(d.nama || "Belum diberi nama")}</b><span class="site-status ${isPublished ? "is-published" : ""}">${isPublished ? "Terbit" : "Draf"}</span></div>
+      <div class="site-title"><b>${esc(d.nama || "Belum diberi nama")}</b><span class="site-status ${statusClass}">${statusLabel}</span></div>
       <p>${esc(t.name)} · Diubah ${esc(when)}</p>
-      <div class="site-url">${esc(baseDisplay)}/<b>${esc(slug)}</b><small>${isPublished ? "Sudah tayang dan dapat diakses publik" : "Belum dipublikasikan"}</small></div>
+      <div class="site-url">${esc(baseDisplay)}/<b>${esc(slug)}</b><small>${urlSubtext}</small></div>
+      ${revisionBanner}
       <div class="site-actions">
         <button class="btn btn-primary btn-sm" type="button" data-act="edit" data-id="${esc(t.id)}">Edit landing page</button>
         ${isPublished ? `<a class="btn btn-outline btn-sm" href="${esc(publicUrl)}" target="_blank" rel="noopener">Lihat situs</a>` : ""}
@@ -1099,7 +1180,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const go = e.target.closest("[data-go]");
     if (go) {
       if (go.dataset.go === "guide") {
-        toast("Fitur segera hadir.");
+        openAdminSupport();
         return;
       }
       if ((await showView(go.dataset.go)) && go.dataset.go === "gallery") setStep(1);
@@ -1107,7 +1188,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   $("#btnConnectSite")?.addEventListener("click", () => toast("Fitur segera hadir."));
-  $("#guideAsk")?.addEventListener("click", () => toast("Fitur segera hadir."));
+  $("#guideAsk")?.addEventListener("click", openAdminSupport);
 
   $("#siteList").addEventListener("click", async (e) => {
     const b = e.target.closest("[data-act]");
@@ -1133,7 +1214,7 @@ document.addEventListener("DOMContentLoaded", () => {
       try {
         const res = await publishSite(site.content, t);
         renderMySites();
-        toast("Situs berhasil dipublikasikan ke " + (res?.public_url || CFG.publicSiteUrl || ""));
+        notifyPublishResult(res);
       } catch (err) {
         toast(err.message || "Gagal mempublikasikan situs.");
       } finally {
@@ -1172,6 +1253,7 @@ document.addEventListener("DOMContentLoaded", () => {
         state = null;
         activeTpl = null;
         history = [];
+        renderRevisionNotice();
         renderMySites();
         toast("Landing page dihapus.");
       } catch (err) {
@@ -1203,10 +1285,13 @@ document.addEventListener("DOMContentLoaded", () => {
     btn.disabled = true;
     try {
       const res = await publishSite(state, activeTpl);
+      const isPending = notifyPublishResult(res);
       setStep(4);
       const el = $("#edStatus");
-      if (el) el.textContent = "Dipublikasikan · " + new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
-      toast("Situs berhasil dipublikasikan ke " + (res?.public_url || CFG.publicSiteUrl || ""));
+      const jam = new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
+      if (el) {
+        el.textContent = (isPending ? "Menunggu tinjauan admin · " : "Dipublikasikan · ") + jam;
+      }
     } catch (err) {
       toast(err.message || "Gagal mempublikasikan situs.");
     } finally {

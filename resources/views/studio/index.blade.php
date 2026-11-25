@@ -115,7 +115,7 @@
           <p class="lead">Semua template sudah jadi. Kamu hanya perlu mengganti teks, foto, dan kontak — tanpa coding.</p>
         </div>
         <div class="head-stat">
-          <b>8</b><small>template siap pakai</small>
+          <b id="templateCount">8</b><small>template siap pakai</small>
         </div>
       </div>
 
@@ -167,6 +167,7 @@
 
       <div class="editor-body">
         <div class="form-col">
+          <div class="revision-notice" id="revisionNotice" role="alert" hidden></div>
           <div class="checklist" id="checklist"></div>
           <form class="panel" id="form" autocomplete="off"></form>
         </div>
