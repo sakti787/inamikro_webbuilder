@@ -38,7 +38,24 @@ class AuthController extends Controller
 
         $request->session()->regenerate();
 
-        return redirect()->intended(route('studio'));
+        $user = $request->user();
+        $intended = $request->session()->pull('url.intended');
+        $intendedPath = is_string($intended) ? (string) parse_url($intended, PHP_URL_PATH) : '';
+        $isAdminPath = $intendedPath === '/admin' || str_starts_with($intendedPath, '/admin/');
+
+        if ($user?->role === 'admin') {
+            if (is_string($intended) && $isAdminPath) {
+                return redirect()->to($intended);
+            }
+
+            return redirect()->route('admin');
+        }
+
+        if (is_string($intended) && $intended !== '' && ! $isAdminPath) {
+            return redirect()->to($intended);
+        }
+
+        return redirect()->route('studio');
     }
 
     /**

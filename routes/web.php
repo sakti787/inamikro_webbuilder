@@ -10,9 +10,17 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function (): RedirectResponse {
-    return Auth::check()
-        ? redirect()->route('studio')
-        : redirect()->route('login');
+    $user = Auth::user();
+
+    if ($user === null) {
+        return redirect()->route('login');
+    }
+
+    if ($user->role === 'admin') {
+        return redirect()->route('admin');
+    }
+
+    return redirect()->route('studio');
 })->name('home');
 
 Route::middleware('guest')->group(function (): void {
@@ -25,10 +33,16 @@ Route::middleware('guest')->group(function (): void {
 Route::middleware('auth')->group(function (): void {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
-    Route::get('/studio', StudioController::class)->name('studio');
+    Route::get('/studio', StudioController::class)
+        ->middleware('role:umkm')
+        ->name('studio');
 });
 
-Route::prefix('api')->middleware('auth')->group(function (): void {
+Route::get('/admin', fn () => response('Panel Pendamping Admin', 200))
+    ->middleware(['auth', 'role:admin'])
+    ->name('admin');
+
+Route::prefix('api')->middleware(['auth', 'role:umkm'])->group(function (): void {
     Route::get('/site', [SiteApiController::class, 'show'])->name('api.site.show');
     Route::put('/site', [SiteApiController::class, 'upsert'])->name('api.site.upsert');
     Route::post('/site/publish', [SiteApiController::class, 'publish'])->name('api.site.publish');
