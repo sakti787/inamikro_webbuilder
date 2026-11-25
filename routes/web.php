@@ -3,8 +3,8 @@
 use App\Http\Controllers\Api\MediaApiController;
 use App\Http\Controllers\Api\SiteApiController;
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\StudioController;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -24,9 +24,7 @@ Route::middleware('guest')->group(function (): void {
 Route::middleware('auth')->group(function (): void {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
-    Route::get('/studio', function (): Response {
-        return response('INAweb Studio');
-    })->name('studio');
+    Route::get('/studio', StudioController::class)->name('studio');
 });
 
 Route::prefix('api')->middleware('auth')->group(function (): void {
