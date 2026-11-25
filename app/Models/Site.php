@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
     'user_id',
@@ -16,6 +17,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'brand_color',
     'content',
     'rendered_html',
+    'admin_note',
+    'revision_note',
     'published_at',
 ])]
 class Site extends Model
@@ -42,5 +45,13 @@ class Site extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * Get the review and status histories for this site.
+     */
+    public function histories(): HasMany
+    {
+        return $this->hasMany(SiteHistory::class);
     }
 }
