@@ -39,36 +39,39 @@ class SiteApiController extends Controller
     {
         $user = $request->user();
         $validated = $request->validated();
-        $existingSite = $user->site()->first();
-        $content = $validated['content'];
 
-        $attributes = [
-            'template_id' => $validated['template_id'],
-            'slug' => $user->slug,
-            'brand_color' => $validated['brand_color'] ?? $existingSite?->brand_color ?? '#dc2626',
-            'content' => $content,
-        ];
+        $site = DB::transaction(function () use ($user, $validated): Site {
+            $existingSite = $user->site()->lockForUpdate()->first();
+            $content = $validated['content'];
 
-        $incomingHtml = $validated['rendered_html'] ?? null;
-        $hasIncomingHtml = is_string($incomingHtml) && trim($incomingHtml) !== '';
+            $attributes = [
+                'template_id' => $validated['template_id'],
+                'slug' => $user->slug,
+                'brand_color' => $validated['brand_color'] ?? $existingSite?->brand_color ?? '#dc2626',
+                'content' => $content,
+            ];
 
-        if ($existingSite === null) {
-            $attributes['status'] = 'draft';
-            $attributes['rendered_html'] = $hasIncomingHtml
-                ? SiteHtmlSanitizer::sanitize($incomingHtml)
-                : null;
-        } elseif ($existingSite->status === 'published') {
-            if ($hasIncomingHtml && SaveSiteRequest::hasCompletePublishContent($content)) {
+            $incomingHtml = $validated['rendered_html'] ?? null;
+            $hasIncomingHtml = is_string($incomingHtml) && trim($incomingHtml) !== '';
+
+            if ($existingSite === null) {
+                $attributes['status'] = 'draft';
+                $attributes['rendered_html'] = $hasIncomingHtml
+                    ? SiteHtmlSanitizer::sanitize($incomingHtml)
+                    : null;
+            } elseif ($existingSite->status === 'published') {
+                if ($hasIncomingHtml && SaveSiteRequest::hasCompletePublishContent($content)) {
+                    $attributes['rendered_html'] = SiteHtmlSanitizer::sanitize($incomingHtml);
+                }
+            } elseif ($hasIncomingHtml) {
                 $attributes['rendered_html'] = SiteHtmlSanitizer::sanitize($incomingHtml);
             }
-        } elseif ($hasIncomingHtml) {
-            $attributes['rendered_html'] = SiteHtmlSanitizer::sanitize($incomingHtml);
-        }
 
-        $site = $user->site()->updateOrCreate(
-            ['user_id' => $user->id],
-            $attributes,
-        );
+            return $user->site()->updateOrCreate(
+                ['user_id' => $user->id],
+                $attributes,
+            );
+        });
 
         return response()->json([
             'site' => $site->fresh(),
@@ -110,7 +113,8 @@ class SiteApiController extends Controller
             }
 
             $autoApprove = AppSetting::autoApproveEnabled();
-            $businessName = trim((string) ($content['nama'] ?? '')) ?: $user->business_name;
+            $businessName = trim((string) ($content['nama'] ?? '')) ?: (string) $user->business_name;
+            $logWho = mb_substr($businessName, 0, 150);
 
             if ($autoApprove) {
                 $attributes['status'] = 'published';
@@ -139,7 +143,7 @@ class SiteApiController extends Controller
                 'description' => $autoApprove
                     ? 'Auto setujui aktif: 4 dari 4 syarat terpenuhi.'
                     : 'UMKM menekan tombol Publikasikan.',
-                'who' => $businessName,
+                'who' => $logWho,
                 'kind' => $autoApprove ? 'auto' : 'general',
             ]);
 

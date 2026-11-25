@@ -718,4 +718,65 @@ HTML;
         );
         $this->assertSame('toko-2', $existingSite->fresh()?->template_id);
     }
+
+    public function test_site_api_hides_internal_admin_note_across_show_upsert_and_publish(): void
+    {
+        AppSetting::setValue('auto_approve', '0');
+
+        $user = User::factory()->create([
+            'business_name' => 'Usaha Terawasi',
+            'slug' => 'usaha-terawasi',
+        ]);
+        $site = Site::factory()->for($user)->create([
+            'template_id' => 'warung',
+            'slug' => $user->slug,
+            'status' => 'draft',
+            'admin_note' => 'Catatan rahasia internal pendamping.',
+            'revision_note' => 'Mohon lengkapi jam buka.',
+        ]);
+
+        $showResponse = $this->actingAs($user)->getJson('/api/site');
+        $showResponse->assertOk();
+        $showResponse->assertJsonPath('site.revision_note', 'Mohon lengkapi jam buka.');
+        $showResponse->assertJsonMissingPath('site.admin_note');
+        $showResponse->assertDontSee('Catatan rahasia internal pendamping.');
+
+        $upsertResponse = $this->actingAs($user)->putJson('/api/site', $this->validSitePayload());
+        $upsertResponse->assertOk();
+        $upsertResponse->assertJsonMissingPath('site.admin_note');
+        $upsertResponse->assertDontSee('Catatan rahasia internal pendamping.');
+
+        $publishResponse = $this->actingAs($user)->postJson('/api/site/publish', $this->validSitePayload());
+        $publishResponse->assertOk();
+        $publishResponse->assertJsonMissingPath('site.admin_note');
+        $publishResponse->assertDontSee('Catatan rahasia internal pendamping.');
+
+        $this->assertSame('Catatan rahasia internal pendamping.', $site->fresh()?->admin_note);
+    }
+
+    public function test_publish_truncates_long_business_name_for_admin_log_who_column(): void
+    {
+        AppSetting::setValue('auto_approve', '0');
+
+        $user = User::factory()->create([
+            'business_name' => 'Usaha Panjang',
+            'slug' => 'usaha-panjang',
+        ]);
+        $longBusinessName = 'Warung '.str_repeat('é', 193);
+        $this->assertSame(200, mb_strlen($longBusinessName));
+
+        $response = $this->actingAs($user)->postJson('/api/site/publish', $this->validSitePayload([
+            'content' => [
+                'nama' => $longBusinessName,
+            ],
+        ]));
+
+        $response->assertOk();
+        $response->assertJsonPath('site.status', 'pending');
+
+        $log = AdminLog::query()->latest('id')->first();
+        $this->assertNotNull($log);
+        $this->assertLessThanOrEqual(150, mb_strlen($log->who));
+        $this->assertSame(mb_substr($longBusinessName, 0, 150), $log->who);
+    }
 }
