@@ -2,7 +2,12 @@
 
 namespace Tests\Feature;
 
+use App\Http\Requests\Api\SaveSiteRequest;
+use App\Models\AdminLog;
+use App\Models\AppSetting;
 use App\Models\Site;
+use App\Models\SiteHistory;
+use App\Models\TemplateSetting;
 use App\Models\User;
 use App\Services\SiteHtmlSanitizer;
 use Database\Seeders\DemoUmkmSeeder;
@@ -92,10 +97,31 @@ class PublicSiteTest extends TestCase
             ->assertOk();
     }
 
-    public function test_demo_umkm_seeder_creates_ready_to_use_umkm_account(): void
+    public function test_demo_umkm_seeder_creates_ready_to_use_umkm_and_admin_accounts_idempotently(): void
     {
         $this->seed(DemoUmkmSeeder::class);
         $this->seed(DemoUmkmSeeder::class);
+
+        $admin = User::where('email', 'admin@inamikro.id')->first();
+
+        $this->assertNotNull($admin);
+        $this->assertSame('Admin Pendamping', $admin->name);
+        $this->assertSame('Tim INAmikro', $admin->business_name);
+        $this->assertSame('tim-inamikro', $admin->slug);
+        $this->assertSame('admin', $admin->role);
+        $this->assertTrue(Hash::check('password', $admin->password));
+
+        $this->assertSame(8, TemplateSetting::count());
+
+        foreach (SaveSiteRequest::ALLOWED_TEMPLATES as $templateId) {
+            $templateSetting = TemplateSetting::where('template_id', $templateId)->first();
+            $this->assertNotNull($templateSetting);
+            $this->assertTrue($templateSetting->is_active);
+        }
+
+        $this->assertSame('0', AppSetting::getValue('auto_approve'));
+        $this->assertSame('Tim INAmikro', AppSetting::getValue('admin_name'));
+        $this->assertSame('6281234567890', AppSetting::getValue('admin_whatsapp'));
 
         $sari = User::where('email', 'sari@inamikro.id')->first();
 
@@ -106,6 +132,19 @@ class PublicSiteTest extends TestCase
         $this->assertSame('umkm', $sari->role);
         $this->assertTrue(Hash::check('password', $sari->password));
 
+        $sariSite = $sari->site()->first();
+        $this->assertNotNull($sariSite);
+        $this->assertSame('published', $sariSite->status);
+        $this->assertTrue(SaveSiteRequest::hasCompletePublishContent($sariSite->content));
+        $this->assertSame('Profil usaha dan menu lengkap, siap tayang.', $sariSite->admin_note);
+        $this->assertNull($sariSite->revision_note);
+        $this->assertStringContainsString(SiteHtmlSanitizer::CLIENT_JS, (string) $sariSite->rendered_html);
+
+        $this->get('/dapur-bu-sari')
+            ->assertOk()
+            ->assertSee('Dapur Bu Sari')
+            ->assertSee('Paket Nasi Ayam Bakar');
+
         $budi = User::where('email', 'budi@inamikro.id')->first();
 
         $this->assertNotNull($budi);
@@ -114,5 +153,16 @@ class PublicSiteTest extends TestCase
         $this->assertSame('sigap-teknik', $budi->slug);
         $this->assertSame('umkm', $budi->role);
         $this->assertTrue(Hash::check('password', $budi->password));
+
+        $budiSite = $budi->site()->first();
+        $this->assertNotNull($budiSite);
+        $this->assertSame('pending', $budiSite->status);
+        $this->assertTrue(SaveSiteRequest::hasCompletePublishContent($budiSite->content));
+
+        $this->get('/sigap-teknik')
+            ->assertNotFound();
+
+        $this->assertSame(3, SiteHistory::count());
+        $this->assertSame(2, AdminLog::count());
     }
 }
