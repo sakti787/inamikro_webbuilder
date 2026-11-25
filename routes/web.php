@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\SiteApiController;
 use App\Http\Controllers\Auth\AuthController;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Response;
@@ -25,4 +26,11 @@ Route::middleware('auth')->group(function (): void {
     Route::get('/studio', function (): Response {
         return response('INAweb Studio');
     })->name('studio');
+});
+
+Route::prefix('api')->middleware('auth')->group(function (): void {
+    Route::get('/site', [SiteApiController::class, 'show'])->name('api.site.show');
+    Route::put('/site', [SiteApiController::class, 'upsert'])->name('api.site.upsert');
+    Route::post('/site/publish', [SiteApiController::class, 'publish'])->name('api.site.publish');
+    Route::delete('/site', [SiteApiController::class, 'destroy'])->name('api.site.destroy');
 });
