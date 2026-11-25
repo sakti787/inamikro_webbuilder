@@ -46,19 +46,19 @@ function normalizeContent(raw, tpl) {
     ...fresh,
     ...src,
     template: tpl.id,
-    variant: src.variant !== undefined ? !!src.variant : !!tpl.variant,
+    variant: src.variant !== undefined && src.variant !== null ? !!src.variant : !!tpl.variant,
     brand: normalizeHex(src.brand || fresh.brand, fresh.brand),
-    nama: src.nama !== undefined ? String(src.nama) : fresh.nama,
-    tagline: src.tagline !== undefined ? String(src.tagline) : fresh.tagline,
-    kategori: src.kategori !== undefined ? String(src.kategori) : fresh.kategori,
-    deskripsi: src.deskripsi !== undefined ? String(src.deskripsi) : fresh.deskripsi,
-    heroImg: src.heroImg !== undefined ? String(src.heroImg) : "",
-    heroName: src.heroName !== undefined ? String(src.heroName) : "",
-    heroSize: src.heroSize !== undefined ? String(src.heroSize) : "",
-    wa: src.wa !== undefined ? String(src.wa) : fresh.wa,
-    ig: src.ig !== undefined ? String(src.ig) : fresh.ig,
-    alamat: src.alamat !== undefined ? String(src.alamat) : fresh.alamat,
-    jam: src.jam !== undefined ? String(src.jam) : fresh.jam,
+    nama: src.nama !== undefined ? String(src.nama ?? "") : fresh.nama,
+    tagline: src.tagline !== undefined ? String(src.tagline ?? "") : fresh.tagline,
+    kategori: src.kategori !== undefined ? String(src.kategori ?? "") : fresh.kategori,
+    deskripsi: src.deskripsi !== undefined ? String(src.deskripsi ?? "") : fresh.deskripsi,
+    heroImg: String(src.heroImg ?? ""),
+    heroName: String(src.heroName ?? ""),
+    heroSize: String(src.heroSize ?? ""),
+    wa: src.wa !== undefined ? String(src.wa ?? "") : fresh.wa,
+    ig: src.ig !== undefined ? String(src.ig ?? "") : fresh.ig,
+    alamat: src.alamat !== undefined ? String(src.alamat ?? "") : fresh.alamat,
+    jam: src.jam !== undefined ? String(src.jam ?? "") : fresh.jam,
     updatedAt: typeof src.updatedAt === "number" ? src.updatedAt : Date.now(),
     produk,
   };
@@ -357,7 +357,7 @@ function renderGallery() {
     return `<article class="card" data-id="${t.id}" data-cat="${t.cat}">
       <div class="thumb">
         ${t.badge ? `<span class="thumb-badge ${t.badge === "Populer" ? "hot" : ""}">${t.badge}</span>` : ""}
-        <iframe title="Pratinjau ${t.name}" tabindex="-1" srcdoc="${html.replace(/"/g, "&quot;")}"></iframe>
+        <iframe title="Pratinjau ${esc(t.name)}" tabindex="-1" srcdoc="${esc(html)}"></iframe>
       </div>
       <div class="card-body">
         <h3>${t.name}</h3>
@@ -469,11 +469,9 @@ function buildForm(t) {
     if (state.produk.length >= 100) return toast("Maksimal 100 item.");
     state.produk.push(normalizeProduct({}));
     $("#items").insertAdjacentHTML("beforeend", prodItem(state.produk.length - 1));
-    bindItems();
     save();
   });
 
-  bindItems();
   bindUpload();
 }
 
@@ -500,19 +498,6 @@ function prodItem(i) {
       </div>
     </div>
   </div>`;
-}
-
-function bindItems() {
-  $$("[data-remove]").forEach((b) =>
-    b.addEventListener("click", () => {
-      if (state.produk.length <= 1) return toast("Minimal satu item.");
-      state.produk.splice(Number(b.dataset.remove), 1);
-      $("#form").innerHTML = "";
-      buildForm(activeTpl);
-      updatePreview();
-      save();
-    })
-  );
 }
 
 /* ---------------- upload & media API ---------------- */
@@ -571,7 +556,7 @@ function bindUpload() {
 
       updatePreview();
       const saved = await saveNow();
-      if (prevUrl && prevUrl !== uploadedUrl) deleteMedia(prevUrl);
+      if (saved && prevUrl && prevUrl !== uploadedUrl) deleteMedia(prevUrl);
       toast(saved ? "Foto berhasil diunggah." : "Foto terunggah, tetapi gagal menyimpan draf.");
     } catch (err) {
       toast(err.message || "Gagal mengunggah foto. Coba file lain.");
@@ -591,8 +576,8 @@ function bindUpload() {
       if (box) box.hidden = true;
       input.value = "";
       updatePreview();
-      await saveNow();
-      deleteMedia(oldUrl);
+      const saved = await saveNow();
+      if (saved && oldUrl) deleteMedia(oldUrl);
       toast("Foto dihapus. Template memakai inisial usaha.");
     });
   }
@@ -630,7 +615,7 @@ async function handleProdUpload(input) {
 
     updatePreview();
     const saved = await saveNow();
-    if (prevUrl && prevUrl !== uploadedUrl) deleteMedia(prevUrl);
+    if (saved && prevUrl && prevUrl !== uploadedUrl) deleteMedia(prevUrl);
     toast(saved ? "Foto item berhasil diunggah." : "Foto item terunggah, tetapi gagal menyimpan draf.");
   } catch (err) {
     toast(err.message || "Gagal mengunggah foto item. Coba file lain.");
@@ -651,8 +636,8 @@ async function removeProdImage(i) {
   const input = $('[data-prod-upload="' + i + '"]');
   if (input) input.value = "";
   updatePreview();
-  await saveNow();
-  deleteMedia(oldUrl);
+  const saved = await saveNow();
+  if (saved && oldUrl) deleteMedia(oldUrl);
   toast("Foto item dihapus.");
 }
 
@@ -1203,6 +1188,16 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   $("#form").addEventListener("click", (e) => {
+    const rmItem = e.target.closest("[data-remove]");
+    if (rmItem) {
+      if (state.produk.length <= 1) return toast("Minimal satu item.");
+      state.produk.splice(Number(rmItem.dataset.remove), 1);
+      $("#form").innerHTML = "";
+      buildForm(activeTpl);
+      updatePreview();
+      save();
+      return;
+    }
     const rmImg = e.target.closest("[data-prod-rmimg]");
     if (rmImg) return removeProdImage(Number(rmImg.dataset.prodRmimg));
     const sw = e.target.closest("[data-color]");
