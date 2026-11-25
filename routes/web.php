@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\AdminApiController;
 use App\Http\Controllers\Api\MediaApiController;
 use App\Http\Controllers\Api\SiteApiController;
 use App\Http\Controllers\Auth\AuthController;
@@ -41,6 +42,17 @@ Route::middleware('auth')->group(function (): void {
 Route::get('/admin', fn () => response('Panel Pendamping Admin', 200))
     ->middleware(['auth', 'role:admin'])
     ->name('admin');
+
+Route::prefix('api/admin')->middleware(['auth', 'role:admin'])->group(function (): void {
+    Route::get('/bootstrap', [AdminApiController::class, 'bootstrap'])->name('api.admin.bootstrap');
+    Route::get('/logs', [AdminApiController::class, 'logs'])->name('api.admin.logs');
+    Route::post('/umkm/{user}/approve', [AdminApiController::class, 'approve'])->name('api.admin.umkm.approve');
+    Route::post('/umkm/{user}/revise', [AdminApiController::class, 'revise'])->name('api.admin.umkm.revise');
+    Route::patch('/umkm/{user}/note', [AdminApiController::class, 'saveNote'])->name('api.admin.umkm.note');
+    Route::patch('/templates/{templateId}', [AdminApiController::class, 'toggleTemplate'])->name('api.admin.templates.toggle');
+    Route::patch('/settings/auto-approve', [AdminApiController::class, 'toggleAutoApprove'])->name('api.admin.settings.auto-approve');
+    Route::patch('/settings/contact', [AdminApiController::class, 'saveContact'])->name('api.admin.settings.contact');
+});
 
 Route::prefix('api')->middleware(['auth', 'role:umkm'])->group(function (): void {
     Route::get('/site', [SiteApiController::class, 'show'])->name('api.site.show');
