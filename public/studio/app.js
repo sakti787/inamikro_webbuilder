@@ -715,6 +715,7 @@ function updatePreview(instant) {
 /* ---------------- persistence (Laravel API) ---------------- */
 let saveTimer = null;
 let saveSeq = 0;
+let inFlightSave = null;
 
 function stripUnsafeImg(val) {
   const s = String(val || "");
@@ -758,34 +759,50 @@ function buildPayload(targetState = state, targetTpl = activeTpl) {
   };
 }
 
-async function persistDraft(seq) {
-  if (!state || !activeTpl) return false;
+function persistDraft(seq) {
+  if (!state || !activeTpl) return Promise.resolve(false);
   const el = $("#edStatus");
   if (el) el.textContent = "Menyimpan...";
 
-  try {
-    state.updatedAt = Date.now();
-    const payload = buildPayload(state, activeTpl);
-    const res = await apiFetch(ROUTES.siteSave, {
-      method: "PUT",
-      body: JSON.stringify(payload),
-    });
+  const prev = inFlightSave;
+  const activePromise = (async () => {
+    if (prev) {
+      await prev.catch(() => {});
+    }
+    if (!state || !activeTpl) return false;
 
-    if (res?.site) {
-      currentSite = normalizeSite(res.site);
-    }
+    try {
+      state.updatedAt = Date.now();
+      const payload = buildPayload(state, activeTpl);
+      const res = await apiFetch(ROUTES.siteSave, {
+        method: "PUT",
+        body: JSON.stringify(payload),
+      });
 
-    if (seq === saveSeq && el) {
-      el.textContent = "Tersimpan otomatis · " + new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
+      if (seq === saveSeq) {
+        if (res?.site) {
+          currentSite = normalizeSite(res.site);
+        }
+        if (el) {
+          el.textContent = "Tersimpan otomatis · " + new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
+        }
+      }
+      return true;
+    } catch (err) {
+      if (seq === saveSeq && el) {
+        el.textContent = "Gagal menyimpan";
+      }
+      toast(err.message || "Gagal menyimpan draf.");
+      return false;
     }
-    return true;
-  } catch (err) {
-    if (seq === saveSeq && el) {
-      el.textContent = "Gagal menyimpan";
+  })().finally(() => {
+    if (inFlightSave === activePromise) {
+      inFlightSave = null;
     }
-    toast(err.message || "Gagal menyimpan draf.");
-    return false;
-  }
+  });
+
+  inFlightSave = activePromise;
+  return activePromise;
 }
 
 function save() {
@@ -803,7 +820,10 @@ function save() {
 }
 
 async function saveNow() {
-  if (!state || !activeTpl) return false;
+  if (!state || !activeTpl) {
+    if (inFlightSave) await inFlightSave;
+    return false;
+  }
   clearTimeout(saveTimer);
   saveTimer = null;
   const seq = ++saveSeq;
@@ -812,10 +832,23 @@ async function saveNow() {
   return persistDraft(seq);
 }
 
+async function flushPendingSave() {
+  while ((saveTimer && state && activeTpl) || inFlightSave) {
+    if (saveTimer && state && activeTpl) {
+      await saveNow();
+    } else if (inFlightSave) {
+      await inFlightSave;
+    }
+  }
+}
+
 async function publishSite(targetState, targetTpl) {
   clearTimeout(saveTimer);
   saveTimer = null;
-  ++saveSeq;
+  const seq = ++saveSeq;
+  while (inFlightSave) {
+    await inFlightSave;
+  }
 
   const payload = buildPayload(targetState, targetTpl);
   const res = await apiFetch(ROUTES.sitePublish, {
@@ -823,7 +856,7 @@ async function publishSite(targetState, targetTpl) {
     body: JSON.stringify(payload),
   });
 
-  if (res?.site) {
+  if (seq === saveSeq && res?.site) {
     currentSite = normalizeSite(res.site);
   }
   return res;
@@ -864,7 +897,13 @@ function closeReplace(answer) {
 }
 
 /* ---------------- navigasi editor ---------------- */
+let openEditorSeq = 0;
+
 async function openEditor(id, fromGallery = false) {
+  const editorSeq = ++openEditorSeq;
+  await flushPendingSave();
+  if (editorSeq !== openEditorSeq) return;
+
   const tpl = TEMPLATES.find((t) => t.id === id) || TEMPLATES[0];
   const existing = currentSite;
   const isDifferentTemplate = existing && existing.template_id !== tpl.id;
@@ -873,7 +912,7 @@ async function openEditor(id, fromGallery = false) {
   if (isDifferentTemplate) {
     if (fromGallery) {
       const nm = existing.content?.nama ? existing.content.nama : "halaman lama";
-      if (!(await askReplace(nm, tpl.name))) return;
+      if (!(await askReplace(nm, tpl.name)) || editorSeq !== openEditorSeq) return;
     }
     carried = existing.content;
   }
@@ -903,7 +942,7 @@ async function openEditor(id, fromGallery = false) {
   clearTimeout(histTimer);
   histTimer = null;
   history = [];
-  showView("editor");
+  await showView("editor");
   $("#edTemplateName").textContent = activeTpl.name;
   $("#edStatus").textContent = existing?.status === "published" ? "Sudah terbit" : "Tersimpan otomatis";
   buildForm(activeTpl);
@@ -919,9 +958,10 @@ async function openEditor(id, fromGallery = false) {
   window.scrollTo({ top: 0, behavior: "instant" });
 }
 
-function backToGallery() {
-  showView("gallery");
-  setStep(1);
+async function backToGallery() {
+  if (await showView("gallery")) {
+    setStep(1);
+  }
 }
 
 function setStep(n) {
@@ -965,11 +1005,14 @@ function exportHtml() {
 
 /* ---------------- halaman: situs saya & panduan ---------------- */
 const VIEWS = ["gallery", "editor", "mysites", "guide"];
+let viewSeq = 0;
 
 async function showView(name) {
-  if (name !== "editor" && saveTimer && state && activeTpl) {
-    await saveNow();
+  const seq = ++viewSeq;
+  if (name !== "editor") {
+    await flushPendingSave();
   }
+  if (seq !== viewSeq) return false;
   VIEWS.forEach((v) => {
     const el = $("#view-" + v);
     if (el) el.hidden = v !== name;
@@ -978,6 +1021,7 @@ async function showView(name) {
   $$(".mobile-nav-item").forEach((b) => b.classList.toggle("is-active", b.dataset.view === name || (name === "editor" && b.dataset.view === "gallery")));
   if (name === "mysites") renderMySites();
   window.scrollTo({ top: 0, behavior: "instant" });
+  return true;
 }
 
 function renderMySites() {
@@ -1040,18 +1084,16 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   $("#btnBack").addEventListener("click", backToGallery);
-  $("#brandHome").addEventListener("click", (e) => {
+  $("#brandHome").addEventListener("click", async (e) => {
     e.preventDefault();
-    showView("gallery");
-    setStep(1);
+    if (await showView("gallery")) setStep(1);
   });
 
-  document.addEventListener("click", (e) => {
+  document.addEventListener("click", async (e) => {
     const nav = e.target.closest("[data-view]");
     if (nav) {
       e.preventDefault();
-      showView(nav.dataset.view);
-      if (nav.dataset.view === "gallery") setStep(1);
+      if ((await showView(nav.dataset.view)) && nav.dataset.view === "gallery") setStep(1);
       return;
     }
     const go = e.target.closest("[data-go]");
@@ -1060,8 +1102,7 @@ document.addEventListener("DOMContentLoaded", () => {
         toast("Fitur segera hadir.");
         return;
       }
-      showView(go.dataset.go);
-      if (go.dataset.go === "gallery") setStep(1);
+      if ((await showView(go.dataset.go)) && go.dataset.go === "gallery") setStep(1);
     }
   });
 
@@ -1116,11 +1157,17 @@ document.addEventListener("DOMContentLoaded", () => {
       });
       if (!ok) return;
 
+      b.disabled = true;
       clearTimeout(saveTimer);
       saveTimer = null;
       ++saveSeq;
+      while (inFlightSave) {
+        await inFlightSave;
+      }
       try {
         await apiFetch(ROUTES.siteDelete, { method: "DELETE" });
+        clearTimeout(histTimer);
+        histTimer = null;
         currentSite = null;
         state = null;
         activeTpl = null;
@@ -1128,6 +1175,7 @@ document.addEventListener("DOMContentLoaded", () => {
         renderMySites();
         toast("Landing page dihapus.");
       } catch (err) {
+        b.disabled = false;
         toast(err.message || "Gagal menghapus landing page.");
       }
     }

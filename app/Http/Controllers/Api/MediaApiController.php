@@ -47,7 +47,7 @@ class MediaApiController extends Controller
 
         $filename = substr($url, strlen($expectedPrefix));
 
-        if ($filename === '' || str_contains($filename, '/')) {
+        if ($filename === '.' || $filename === '..' || preg_match('/^[A-Za-z0-9._-]+$/', $filename) !== 1) {
             abort(403, 'Akses ditolak.');
         }
 

@@ -159,4 +159,24 @@ class AuthTest extends TestCase
         $logoutResponse->assertRedirect(route('login'));
         $this->assertGuest();
     }
+
+    public function test_failed_login_shows_inline_error_once_without_duplicate_alert(): void
+    {
+        User::factory()->create([
+            'email' => 'umkm@example.com',
+            'password' => Hash::make('sandiaman123'),
+        ]);
+
+        $response = $this->followingRedirects()
+            ->from(route('login'))
+            ->post(route('login'), [
+                'email' => 'umkm@example.com',
+                'password' => 'salahpassword',
+            ]);
+
+        $response->assertOk();
+        $response->assertSee('Email atau kata sandi salah.');
+        $response->assertDontSee('role="alert"', false);
+        $this->assertSame(1, substr_count((string) $response->getContent(), 'Email atau kata sandi salah.'));
+    }
 }

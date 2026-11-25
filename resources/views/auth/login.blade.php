@@ -247,7 +247,7 @@
             <h1 id="login-heading">Masuk ke INAweb Studio</h1>
             <p class="lead">Kelola website usaha Anda dengan cepat dan bagikan ke calon pembeli.</p>
 
-            @if ($errors->any())
+            @if ($errors->any() && ! $errors->has('email') && ! $errors->has('password'))
                 <div class="alert-error" role="alert">
                     {{ $errors->first() }}
                 </div>

@@ -11,7 +11,7 @@ class PublicSiteController extends Controller
     /**
      * Serve the published UMKM microsite HTML with strict Content-Security-Policy headers.
      */
-    public function __invoke(string $slug, SiteHtmlSanitizer $sanitizer): Response
+    public function __invoke(string $slug): Response
     {
         $site = Site::where('slug', $slug)
             ->where('status', 'published')
@@ -19,6 +19,6 @@ class PublicSiteController extends Controller
 
         return response($site->rendered_html ?? '', 200)
             ->header('Content-Type', 'text/html; charset=UTF-8')
-            ->header('Content-Security-Policy', $sanitizer->cspHeader());
+            ->header('Content-Security-Policy', SiteHtmlSanitizer::cspHeader());
     }
 }

@@ -119,6 +119,11 @@ class MediaUploadTest extends TestCase
     #[TestWith(['/storage/sites/%USER%/%2e%2e/%OTHER%/secret.jpg'])]
     #[TestWith(['/storage/sites/%USER%/%2E%2E%5C%OTHER%/secret.jpg'])]
     #[TestWith(['/storage/other/secret.jpg'])]
+    #[TestWith(['/storage/sites/%USER%/.'])]
+    #[TestWith(['/storage/sites/%USER%/..'])]
+    #[TestWith(['/storage/sites/%USER%/sub/secret.jpg'])]
+    #[TestWith(['/storage/sites/%USER%/bad name.jpg'])]
+    #[TestWith(['/storage/sites/%USER%/bad?name.jpg'])]
     public function test_umkm_cannot_delete_another_users_media_or_use_path_traversal(string $urlTemplate): void
     {
         Storage::fake('public');
