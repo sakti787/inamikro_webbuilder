@@ -29,11 +29,54 @@
 
   <div class="topbar-right">
     <span class="pill pill-soft">Gratis untuk anggota INAmikro</span>
-    <div class="avatar" title="{{ $user->name }} — {{ $user->business_name }}">{{ $initial }}</div>
-    <form method="POST" action="{{ route('logout') }}" class="logout-form">
-      @csrf
-      <button type="submit" class="btn btn-ghost btn-sm btn-logout">Keluar</button>
-    </form>
+    <div class="profile-wrap">
+      <button
+        type="button"
+        class="avatar"
+        id="avatarBtn"
+        title="Detail akun {{ $user->name }}"
+        aria-haspopup="true"
+        aria-expanded="false"
+        aria-controls="profilePop"
+      >{{ $initial }}</button>
+
+      <div class="profile-pop" id="profilePop" role="region" aria-label="Detail profil akun" hidden>
+        <div class="profile-head">
+          <div class="avatar avatar-lg" aria-hidden="true">{{ $initial }}</div>
+          <div class="profile-id">
+            <b>{{ $user->name }}</b>
+            <small>{{ $user->email }}</small>
+          </div>
+        </div>
+
+        <div class="profile-meta">
+          <div class="profile-row">
+            <span>Nama usaha</span>
+            <b>{{ $user->business_name ?: '-' }}</b>
+          </div>
+          <div class="profile-row">
+            <span>Alamat situs</span>
+            <code>/{{ $user->slug }}</code>
+          </div>
+          <div class="profile-row">
+            <span>Status akun</span>
+            <span class="profile-role">{{ strtoupper((string) ($user->role ?: 'umkm')) }}</span>
+          </div>
+        </div>
+
+        <form method="POST" action="{{ route('logout') }}" class="logout-form">
+          @csrf
+          <button type="submit" class="profile-logout">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+              <polyline points="16 17 21 12 16 7"></polyline>
+              <line x1="21" y1="12" x2="9" y2="12"></line>
+            </svg>
+            <span>Keluar</span>
+          </button>
+        </form>
+      </div>
+    </div>
   </div>
 </header>
 

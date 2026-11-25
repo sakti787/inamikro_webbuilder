@@ -1273,9 +1273,28 @@ document.addEventListener("DOMContentLoaded", () => {
     if (b) focusField(b.dataset.focus);
   });
 
+  const avatarBtn = $("#avatarBtn");
+  const profilePop = $("#profilePop");
+  const closeProfilePop = () => {
+    if (!profilePop || !avatarBtn) return;
+    profilePop.hidden = true;
+    avatarBtn.setAttribute("aria-expanded", "false");
+  };
+  if (avatarBtn && profilePop) {
+    avatarBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const willOpen = profilePop.hidden;
+      const historyPop = $("#historyPop");
+      if (historyPop) historyPop.hidden = true;
+      profilePop.hidden = !willOpen;
+      avatarBtn.setAttribute("aria-expanded", String(willOpen));
+    });
+  }
+
   $("#btnUndo").addEventListener("click", undo);
   $("#btnHistory").addEventListener("click", (e) => {
     e.stopPropagation();
+    closeProfilePop();
     const p = $("#historyPop");
     p.hidden = !p.hidden;
     if (!p.hidden) renderHistory();
@@ -1293,6 +1312,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
   document.addEventListener("click", (e) => {
     if (!e.target.closest(".history-wrap")) $("#historyPop").hidden = true;
+    if (!e.target.closest(".profile-wrap")) closeProfilePop();
   });
 
   $("#confirmCancel").addEventListener("click", () => closeReplace(false));
@@ -1301,7 +1321,12 @@ document.addEventListener("DOMContentLoaded", () => {
     if (e.target.id === "confirmModal") closeReplace(false);
   });
   document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && !$("#confirmModal").hidden) closeReplace(false);
+    if (e.key === "Escape") {
+      if (!$("#confirmModal").hidden) closeReplace(false);
+      closeProfilePop();
+      const historyPop = $("#historyPop");
+      if (historyPop) historyPop.hidden = true;
+    }
   });
 });
 

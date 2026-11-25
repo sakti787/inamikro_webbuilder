@@ -23,6 +23,7 @@ class StudioViewTest extends TestCase
     {
         $user = User::factory()->create([
             'name' => 'Sari Dewi',
+            'email' => 'sari.dewi@inamikro.id',
             'business_name' => 'Warung Mbak Sari',
             'slug' => 'warung-mbak-sari',
             'role' => 'umkm',
@@ -39,10 +40,18 @@ class StudioViewTest extends TestCase
         $response->assertSee('studio-assets/style.css', false);
         $response->assertSee('studio-assets/templates.js', false);
         $response->assertSee('studio-assets/app.js', false);
+        $response->assertSee('id="avatarBtn"', false);
+        $response->assertSee('id="profilePop"', false);
+        $response->assertSee('Sari Dewi');
+        $response->assertSee('sari.dewi@inamikro.id');
+        $response->assertSee('Warung Mbak Sari');
+        $response->assertSee('/warung-mbak-sari');
+        $response->assertSee('UMKM');
+        $response->assertSee('class="profile-logout"', false);
+        $response->assertSee('<svg', false);
         $response->assertSee('action="'.route('logout').'"', false);
         $response->assertSee('name="_token"', false);
         $response->assertSee('Keluar');
-        $response->assertSee('warung-mbak-sari');
 
         $html = $response->getContent();
         $this->assertIsString($html);
