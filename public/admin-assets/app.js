@@ -85,9 +85,15 @@
   let logPageData = null;
   let logFetchSeq = 0;
 
+  const getTemplates = () => {
+    if (Array.isArray(globalThis.TEMPLATES)) return globalThis.TEMPLATES;
+    if (typeof TEMPLATES !== "undefined" && Array.isArray(TEMPLATES)) return TEMPLATES;
+    return [];
+  };
+
   function syncTemplates(list) {
     const map = {};
-    (globalThis.TEMPLATES || []).forEach((t) => {
+    getTemplates().forEach((t) => {
       map[t.id] = true;
     });
     if (Array.isArray(list)) {
@@ -128,7 +134,7 @@
 
   /* ---------------- util ---------------- */
   const TEMPLATE_BY_ID = (id) => {
-    const list = globalThis.TEMPLATES || [];
+    const list = getTemplates();
     return list.find((t) => t.id === id) || list[0] || {
       id: id || "warung",
       name: id || "Template",
@@ -329,7 +335,7 @@
 
   /* ---------------- render: template ---------------- */
   function renderTplAdmin() {
-    $("#tplAdminGrid").innerHTML = (globalThis.TEMPLATES || []).map((t) => {
+    $("#tplAdminGrid").innerHTML = getTemplates().map((t) => {
       const active = !!DB.tplActive[t.id];
       return `
       <div class="tpl-card">

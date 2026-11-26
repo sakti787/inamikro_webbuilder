@@ -629,3 +629,5 @@ const TEMPLATES = [
   { id: "jasa-2", name: "Bengkel Sigap", cat: "jasa", blurb: "Untuk bengkel, laundry, dan servis harian. Fokus ke kecepatan dan kontak langsung.", tag1: "Layanan", tag2: "Paket harga", badge: "", brand: "#0d9488", productLabel: "Layanan", variant: true, render: tplJasa },
   { id: "toko-2", name: "Sembako Jaya", cat: "retail", blurb: "Untuk sembako dan kebutuhan harian. Daftar harga jelas, pesan lewat WhatsApp.", tag1: "Katalog", tag2: "Info toko", badge: "", brand: "#15803d", productLabel: "Produk", variant: true, render: tplToko },
 ];
+
+globalThis.TEMPLATES = TEMPLATES;
